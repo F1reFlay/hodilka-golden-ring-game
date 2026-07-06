@@ -31,8 +31,9 @@
         
         #turn-indicator { font-size: 18px; font-weight: bold; color: #8be9fd; text-align: center; padding: 12px; background: #232830; border-radius: 12px; border: 1px solid #3b4252; }
         #dice-zone { font-size: 50px; text-align: center; margin: 5px 0; background: #232830; border-radius: 16px; padding: 15px; border: 1px solid #3b4252; }
+        
         #gold-modal { display: none; position: fixed; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.6); z-index: 1000; }
-        #gold-modal-content { position: absolute; left: 0; top: 0; width: 380px; height: 100%; background: #1c1f26; border-right: 4px solid #f1c40f; box-shadow: 5px 0 30px rgba(0, 0, 0, 0.7); padding: 30px 20px; display: flex; flex-direction: column; animation: slideIn 0.3s ease; }
+        #gold-modal-content { position: absolute; left: 0; top: 0; width: 380px; height: 100%; background: #1c1f26; border-right: 4px solid #f1c40f; box-shadow: 5px 0 30px rgba(0, 0, 0, 0.7); padding: 30px 20px; display: flex; flex-direction: column; animation: slideIn 0.3s ease; box-sizing: border-box; }
         @keyframes slideIn { from { transform: translateX(-100%); } to { transform: translateX(0); } }
         .gold-header { font-size: 22px; color: #f1c40f; font-weight: bold; letter-spacing: 1.5px; margin-bottom: 25px; text-align: center; border-bottom: 2px solid #3b4252; padding-bottom: 12px; }
         #gold-modal-text { font-size: 16px; line-height: 1.7; color: #e5e9f0; flex-grow: 1; overflow-y: auto; margin-bottom: 25px; padding-right: 10px; white-space: pre-line; }
@@ -40,149 +41,39 @@
         #gold-modal-text::-webkit-scrollbar-thumb { background: #3b4252; border-radius: 4px; }
         #gold-modal-text::-webkit-scrollbar-thumb:hover { background: #f1c40f; }
         
-        .btn-close-modal { display: block; padding: 16px 20px; font-size: 16px; background: #f1c40f; color: #111213; border: none; border-radius: 20px; font-weight: bold; cursor: pointer; transition: all 0.2s ease; }
+        .btn-close-modal { display: block; padding: 16px 20px; font-size: 16px; background: #f1c40f; color: #111213; border: none; border-radius: 20px; font-weight: bold; cursor: pointer; transition: all 0.2s ease; width: 100%; box-shadow: 0 4px 12px rgba(241,196,15,0.3); }
         .btn-close-modal:hover { background: #d4ac0d; transform: translateY(-3px); box-shadow: 0 6px 20px rgba(241,196,15,0.4); }
         .btn-close-modal:active { transform: translateY(-1px) scale(0.97); }
 
         #win-modal { display: none; position: fixed; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.75); z-index: 2000; }
-        #win-modal-content { position: absolute; left: 50%; top: 0; transform: translateX(-50%); width: 450px; background: #16181c; border-bottom: 4px solid #a482ff; border-left: 1px solid #2e3440; border-right: 1px solid #2e3440; padding: 40px 30px; animation: slideDown 0.4s ease; }
+        #win-modal-content { position: absolute; left: 50%; top: 0; transform: translateX(-50%); width: 450px; background: #16181c; border-bottom: 4px solid #a482ff; border-left: 1px solid #2e3440; border-right: 1px solid #2e3440; border-radius: 0 0 24px 24px; padding: 40px 30px; text-align: center; box-shadow: 0 15px 40px rgba(0,0,0,0.8); animation: slideDown 0.4s ease; box-sizing: border-box; }
         @keyframes slideDown { from { top: -100%; } to { top: 0; } }
-        .winner-badge { display: inline-block; padding: 20px 45px; font-size: 24px; font-weight: bold; color: #ffffff; border-radius: 24px; margin: 25px 0; transform: translateY(-8px); box-shadow: 0 8px 20px rgba(0,0,0,0.4); }
-        .btn-restart { padding: 16px 32px; font-size: 16px; background: #a482ff; color: #111213; border: none; border-radius: 20px; font-weight: bold; cursor: pointer; transition: all 0.2s ease; width: 100%; }
+        .winner-badge { display: inline-block; padding: 20px 45px; font-size: 24px; font-weight: bold; color: #ffffff; border-radius: 24px; margin: 25px 0; transform: translateY(-8px); box-shadow: 0 4px 0 rgba(0,0,0,0.3), 0 10px 20px rgba(164, 130, 255, 0.3), 0 20px 40px rgba(164, 130, 255, 0.15), 0 30px 60px rgba(164, 130, 255, 0.08); border: 2px solid rgba(255,255,255,0.1); }
+        .btn-restart { padding: 16px 32px; font-size: 16px; background: #a482ff; color: #111213; border: none; border-radius: 20px; font-weight: bold; cursor: pointer; transition: all 0.2s ease; width: 100%; box-shadow: 0 4px 12px rgba(164,130,255,0.3); margin-top: 15px; }
         .btn-restart:hover { background: #8c66ff; transform: translateY(-2px); box-shadow: 0 6px 20px rgba(164,130,255,0.4); }
         .btn-restart:active { transform: translateY(0) scale(0.98); }
 
-        /* На мобильных экранах меню переходит под карту */
         @media (max-width: 1024px) {
-            #game-interface { 
-                flex-direction: column;
-                align-items: center;
-            }
-            
-            canvas { 
-                max-width: 100%;
-                width: 100%;
-                height: auto;
-            }
-            
-            #side-panel { 
-                width: 100%;
-                max-width: 500px;
-            }
-
-            .game-title { 
-                font-size: 24px; 
-                padding: 10px 20px; 
-                margin-bottom: 10px; 
-                width: 90%; 
-                box-sizing: border-box; 
-            }
-
-            #gold-modal-content { 
-                width: 100%; 
-                max-width: 100%; 
-                border-right: none; 
-                border-bottom: 4px solid #f1c40f; 
-                height: 80%;
-                border-left: none;
-            }
-            
-            #win-modal-content { 
-                width: 95%; 
-                padding: 25px 20px; 
-            }
-            
-            .winner-badge { 
-                padding: 15px 30px; 
-                font-size: 20px; 
-            }
+            #game-interface { flex-direction: column; align-items: center; }
+            canvas { max-width: 100%; width: 100%; height: auto; }
+            #side-panel { width: 100%; max-width: 500px; }
+            .game-title { font-size: 24px; padding: 10px 20px; margin-bottom: 10px; width: 90%; box-sizing: border-box; }
+            #gold-modal-content { width: 100%; max-width: 100%; border-right: none; border-bottom: 4px solid #f1c40f; height: 80%; border-left: none; }
+            #win-modal-content { width: 95%; padding: 25px 20px; }
+            .winner-badge { padding: 15px 30px; font-size: 20px; }
         }
 
         @media (max-width: 768px) {
             body { padding: 15px; }
-            
-            .game-title { 
-                font-size: 20px; 
-                padding: 8px 15px; 
-                margin-bottom: 8px;
-            }
-            
-            #start-screen {
-                padding: 20px;
-                margin-top: 30px;
-            }
-            
-            #start-screen h2 {
-                font-size: 16px;
-                margin-bottom: 15px;
-            }
-            
-            .btn-mode { 
-                padding: 12px 20px; 
-                font-size: 14px; 
-                margin: 5px;
-                width: calc(100% - 10px);
-            }
-            
-            #side-panel { 
-                padding: 12px;
-                gap: 12px;
-            }
-            
-            .btn-roll { 
-                padding: 14px;
-                font-size: 16px;
-            }
-            
-            #turn-indicator { 
-                font-size: 14px;
-                padding: 8px;
-            }
-            
-            #dice-zone { 
-                font-size: 36px;
-                padding: 10px;
-            }
-            
-            #win-modal-content {
-                width: 90%;
-                padding: 20px 15px;
-            }
-            
-            #win-modal-content h2 {
-                font-size: 18px;
-            }
-            
-            .winner-badge {
-                padding: 12px 20px;
-                font-size: 16px;
-                margin: 15px 0;
-            }
-            
-            .btn-restart {
-                padding: 12px 20px;
-                font-size: 14px;
-            }
-
-            #gold-modal-content {
-                width: 100%;
-                height: 90%;
-            }
-
-            .gold-header {
-                font-size: 18px;
-                margin-bottom: 15px;
-            }
-
-            #gold-modal-text {
-                font-size: 14px;
-                margin-bottom: 15px;
-            }
-
-            .btn-close-modal {
-                padding: 12px 15px;
-                font-size: 14px;
-            }
+            .game-title { font-size: 20px; padding: 8px 15px; margin-bottom: 8px; }
+            #start-screen { padding: 20px; margin-top: 30px; }
+            #start-screen h2 { font-size: 16px; margin-bottom: 15px; }
+            .btn-mode { padding: 12px 20px; font-size: 14px; margin: 5px; width: calc(100% - 10px); }
+            #side-panel { padding: 12px; gap: 12px; }
+            .btn-roll { padding: 14px; font-size: 16px; }
+            #turn-indicator { font-size: 14px; padding: 8px; }
+            #dice-zone { font-size: 36px; padding: 10px; }
+            #win-modal-content { width: 90%; }
         }
     </style>
 </head>
@@ -198,7 +89,10 @@
     </div>
 
     <div id="game-interface">
-        <canvas id="gameCanvas" width="850" height="510"></canvas>
+        <div>
+            <canvas id="gameCanvas" width="1000" height="600"></canvas>
+        </div>
+        
         <div id="side-panel">
             <div id="turn-indicator">Ожидание...</div>
             <div id="dice-zone">🎲</div>
