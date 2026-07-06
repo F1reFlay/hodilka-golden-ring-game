@@ -249,18 +249,17 @@ function startGame(totalPlayers, hasBots) {
 function drawGame() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     
-    if (mapLoadedSuccessfully && mapImage.complete && mapImage.naturalWidth > 0) {
+    // Если картинка загружена — рисуем карту, иначе оставляем ровный темный фон Modrinth без лишних текстов ошибок
+    if (mapImage.complete && mapImage.naturalWidth > 0) {
         ctx.drawImage(mapImage, 0, 0, canvas.width, canvas.height);
     } else {
         ctx.fillStyle = "#16181c";
         ctx.fillRect(0, 0, canvas.width, canvas.height);
         
-        if (mapLoadError) {
-            ctx.fillStyle = "#ff5555";
-            ctx.font = "16px sans-serif";
-            ctx.textAlign = "center";
-            ctx.fillText(mapLoadError, canvas.width / 2, 30);
-        }
+        // Автоматически пробуем перерисовать холст, как только медленный Wi-Fi отдаст картинку карты
+        mapImage.addEventListener('load', () => {
+            if (players.length > 0) drawGame();
+        }, { once: true });
     }
     
     players.forEach((player, index) => {
@@ -299,6 +298,7 @@ function updateUI() {
         rollButton.style.color = "#ffffff";
     }
 }
+
 
 // ==========================================
 // ГЕЙМ ЧАСТЬ 5: ДВИЖЕНИЕ ФИШЕК И СМЕНА ХОДОВ
