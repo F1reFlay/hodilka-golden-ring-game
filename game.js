@@ -199,7 +199,7 @@ function getNextCellId(currentId, goesFork) {
 
 
 // ==========================================
-// ГЕЙМ ЧАСТЬ 4: ПРАВИЛА И ЗАПУСК РЕЖИМОВ
+// ГЕЙМ ЧАСТЬ 4: ПРАВИЛА И СТАРТ РЕЖИМОВ ИГРЫ
 // ==========================================
 const gameRulesText = "ПРАВИЛА\nИгры-Путешествия «Золотое кольцо России»\n\n" +
 "• Поставьте все фишки игроков на поле «Москва».\n\n" +
@@ -245,6 +245,14 @@ function startGame(totalPlayers, hasBots) {
     currentTurn = 0;
     isMoving = false;
     updateUI();
+    
+    // ИСПРАВЛЕНО: При старте игры сразу выводим в окошко кубик "cubic_1.webm", чтобы зона не пустовала до первого клика!
+    const videoEl = document.getElementById("dice-video");
+    if (videoEl) {
+        videoEl.src = "cubic_1.webm";
+        videoEl.load();
+    }
+    
     drawGame();
 }
 
