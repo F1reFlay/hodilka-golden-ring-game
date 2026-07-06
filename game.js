@@ -4,12 +4,10 @@
 const canvas = document.getElementById("gameCanvas");
 const ctx = canvas.getContext("2d");
 
-// Карта загружается напрямую из интернета для стабильной работы на телефонах
 const mapImage = new Image();
 let mapLoadedSuccessfully = false;
 let mapLoadError = null;
 
-// Установка таймаута для загрузки карты (10 секунд)
 const mapLoadTimeout = setTimeout(() => {
     if (!mapLoadedSuccessfully) {
         mapLoadError = "Карта долго загружается. Используется режим без карты.";
@@ -17,9 +15,9 @@ const mapLoadTimeout = setTimeout(() => {
     }
 }, 10000);
 
-mapImage.src = "https://i.postimg.cc/6qyTxxhZ/map.jpg";
+// ИСПРАВЛЕНО: Загружаем файл напрямую из репозитория GitHub, чтобы Android всё видел!
+mapImage.src = "map.jpg";
 
-// Обработка успешной загрузки
 mapImage.onload = function() {
     mapLoadedSuccessfully = true;
     mapLoadError = null;
@@ -27,7 +25,6 @@ mapImage.onload = function() {
     console.log("Map loaded successfully");
 };
 
-// Обработка ошибки загрузки
 mapImage.onerror = function() {
     mapLoadError = "Не удалось загрузить карту. Проверьте интернет-соединение.";
     clearTimeout(mapLoadTimeout);
@@ -41,7 +38,6 @@ let isExtraTurnEarned = false;
 
 const playerColors = ["#a482ff", "#50fa7b", "#ffb86c", "#8be9fd"];
 
-// Масштаб координат: новый размер (850x510) от старого (1000x600)
 const SCALE_X = 0.85;
 const SCALE_Y = 0.85;
 
@@ -53,21 +49,22 @@ const boardRoute = {
     "9": { "x": Math.round(201 * SCALE_X), "y": Math.round(471 * SCALE_Y), "type": "normal" },
     "10": { "x": Math.round(221 * SCALE_X), "y": Math.round(459 * SCALE_Y), "type": "normal" },
     "11": { "x": Math.round(240 * SCALE_X), "y": Math.round(447 * SCALE_Y), "type": "normal" },
-    "12": { "x": Math.round(257 * SCALE_X), "y": Math.round(426 * SCALE_Y), "type": "gold", "text": "Сергиев Посад\nЖемчужина Золотого кольца, славится своим духовным сердцем" },
+    "12": { "x": Math.round(257 * SCALE_X), "y": Math.round(426 * SCALE_Y), "type": "gold", "text": "Сергиев Посад\nЖемчужина Золотого кольца, славится своим духовным сердцем — величественной Троице-Сергиевой лаврой, притягивающей паломников и туристов со всего мира. Именно здесь можно проследить всю историю русского православия и увидеть уникальные памятники церковного зодчества, такие как белокаменный Троицкий собор, где покоятся мощи преподобного Сергия Радонежского. Духовный подъем дает вам право сделать еще один ход!" },
     "13": { "x": Math.round(258 * SCALE_X), "y": Math.round(400 * SCALE_Y), "type": "normal" },
     "14": { "x": Math.round(272 * SCALE_X), "y": Math.round(380 * SCALE_Y), "type": "fork" },
     "15": { "x": Math.round(298 * SCALE_X), "y": Math.round(375 * SCALE_Y), "type": "normal" },
     "16": { "x": Math.round(326 * SCALE_X), "y": Math.round(368 * SCALE_Y), "type": "normal" },
     "17": { "x": Math.round(354 * SCALE_X), "y": Math.round(361 * SCALE_Y), "type": "normal" },
-    "18": { "x": Math.round(374 * SCALE_X), "y": Math.round(347 * SCALE_Y), "type": "gold", "text": "Переславль-Залесский\nДревний город, хранит память о рождении великого русского государства" },
+    "18": { "x": Math.round(374 * SCALE_X), "y": Math.round(347 * SCALE_Y), "type": "gold", "text": "Переславль-Залесский\nДревний город Золотого кольца, хранит память о рождении великого русского полководца и князя — Александра Невского, чей памятник встречает гостей у стен старинного Спасо-Преображенского собора. На живописном берегу Плещеева озера можно увидеть знаменитый Синь-камень — загадочный валун, которому поклонялись еще древние меря и который сохранил свою магическую ауру до наших дней. Уникальным музеем города является «Ботик Петра I», где хранится единственный уцелевший корабль потешной флотилии юного императора, положившей начало российскому военному флоту." },
     "19": { "x": Math.round(382 * SCALE_X), "y": Math.round(321 * SCALE_Y), "type": "normal" },
     "20": { "x": Math.round(394 * SCALE_X), "y": Math.round(299 * SCALE_Y), "type": "normal" },
     "21": { "x": Math.round(402 * SCALE_X), "y": Math.round(275 * SCALE_Y), "type": "normal" },
     "22": { "x": Math.round(419 * SCALE_X), "y": Math.round(256 * SCALE_Y), "type": "normal" },
-    "23": { "x": Math.round(433 * SCALE_X), "y": Math.round(232 * SCALE_Y), "type": "gold", "text": "Ростов Великий\nОдин из ключевых точек Золотого кольца. Славится своим величием" },
+    "23": { "x": Math.round(433 * SCALE_X), "y": Math.round(232 * SCALE_Y), "type": "gold", "text": "Ростов Великий\nОдин из ключевых точек Золотого кольца, прежде всего славится своим величественным Кремлем с уникальными храмами и мощными крепостными стенами, чей устремленный в небо силуэт создает один из самых узнаваемых видов России. Ни с чем не сравнимое впечатление оставляют знаменитые ростовские звоны — мелодичные переливы колоколов Успенской звонницы, которые являются живым памятником русского музыкального искусства. Погрузиться в историю и быт древнего города поможет посещение музеев финифти, где хранятся изящные произведения искусства, продолжающие старинные традиции местных мастеров-эмальеров." },
     "24": { "x": Math.round(448 * SCALE_X), "y": Math.round(211 * SCALE_Y), "type": "normal" },
     "25": { "x": Math.round(469 * SCALE_X), "y": Math.round(197 * SCALE_Y), "type": "fork" }
 };
+
 
 // ==========================================
 // ЧАСТЬ 2: ПУТЕВОДИТЕЛЬ (ПРОДОЛЖЕНИЕ)
@@ -75,7 +72,7 @@ const boardRoute = {
 Object.assign(boardRoute, {
     "26": { "x": Math.round(497 * SCALE_X), "y": Math.round(157 * SCALE_Y), "type": "normal" },
     "27": { "x": Math.round(483 * SCALE_X), "y": Math.round(131 * SCALE_Y), "type": "normal" },
-    "28": { "x": Math.round(472 * SCALE_X), "y": Math.round(108 * SCALE_Y), "type": "gold", "text": "Ярославль\nОснован легендарным князем Ярославом Мудрым" },
+    "28": { "x": Math.round(472 * SCALE_X), "y": Math.round(108 * SCALE_Y), "type": "gold", "text": "Ярославль\nОснован легендарным князем Ярославом Мудрым, выражает гостей своим историческим центром, включенным в список Всемирного наследия ЮНЕСКО. Здесь на красивейшей стрелке Волги и Которосли возвышается ансамбль уникальных храмов, демонстрирующих расцвет местной архитектурной школы. Церковь Иоанна Предтечи в Толчкове, знаменитая своими пятнадцатью главами и изразцовым убранством, считается вершиной ярославского зодчества XVII века. Её устремленный вверх силуэт и богатые фресковые росписи создают незабываемое впечатление. Волжская набережная города, украшенная ажурными беседками и памятниками, предлагает идеальную прогулку от древнего Спасо-Преображенского монастыря до современного театра драмы имени Фёдора Волкова, первого профессионального театра России, что подчеркивает статус Ярославля как культурной столицы Золотого кольца." },
     "29": { "x": Math.round(494 * SCALE_X), "y": Math.round(91 * SCALE_Y), "type": "normal" },
     "30": { "x": Math.round(526 * SCALE_X), "y": Math.round(84 * SCALE_Y), "type": "normal" },
     "31": { "x": Math.round(559 * SCALE_X), "y": Math.round(87 * SCALE_Y), "type": "normal" },
@@ -83,10 +80,10 @@ Object.assign(boardRoute, {
     "33": { "x": Math.round(622 * SCALE_X), "y": Math.round(109 * SCALE_Y), "type": "normal" },
     "34": { "x": Math.round(643 * SCALE_X), "y": Math.round(131 * SCALE_Y), "type": "normal" },
     "35": { "x": Math.round(668 * SCALE_X), "y": Math.round(116 * SCALE_Y), "type": "normal" },
-    "36": { "x": Math.round(662 * SCALE_X), "y": Math.round(88 * SCALE_Y), "type": "gold", "text": "Кострома\nРовесница Москвы, основанная Юрием Долгоруким" },
+    "36": { "x": Math.round(662 * SCALE_X), "y": Math.round(88 * SCALE_Y), "type": "gold", "text": "Кострома\nРовесница Москвы, основанная Юрием Долгоруким, уникально сохранила веерную планировку центральных улиц, утвержденную императрицей Екатериной II, и ансамбль Торговых рядов, где и сегодня кипит купеческая жизнь. Ипатьевский монастырь, колыбель династии Романовых, притягивает паломников и историков своими мощными стенами, Троицким собором с фресками Гурия Никитина и палатами, где юный Михаил Федорович был призван на царство. Величественная Пожарная каланча на Сусанинской площади — символ города и блестящий памятник эпохи классицизма, который Николай I назвал «лучшей во всей губернии», а за её строгим фасадом скрывается уникальный музей пожарного дела." },
     "37": { "x": Math.round(648 * SCALE_X), "y": Math.round(65 * SCALE_Y), "type": "normal" },
     "38": { "x": Math.round(642 * SCALE_X), "y": Math.round(39 * SCALE_Y), "type": "normal" },
-    "39": { "x": Math.round(650 * SCALE_X), "y": Math.round(17 * SCALE_Y), "type": "gold", "text": "Иваново\nЗнаменитый город невест и ситцевый край" },
+    "39": { "x": Math.round(650 * SCALE_X), "y": Math.round(17 * SCALE_Y), "type": "gold", "text": "Иваново\nИзвестный как «город невест» и «ситцевый край», хранит уникальную промышленную архитектуру в стиле конструктивизма — от знаменитого «Дома-корабля» до здания Ивсельбанка, напоминающего о его статусе текстильной столицы России. В отличие от других древних городов маршрута, здесь главные достопримечательности — не храмы, а монументальные фабричные корпуса и дворцы труда, говорящие о революционном прошлом и социальных преобразованиях начала XX века. При этом в городе можно обнаружить и старинные памятники, такие как Щудровская палатка XVII века, которая контрастирует с авангардными формами и показывает многовековую историю этого торгового села, выросшего в крупный промышленный центр." },
     "40": { "x": Math.round(690 * SCALE_X), "y": Math.round(30 * SCALE_Y), "type": "normal" },
     "41": { "x": Math.round(727 * SCALE_X), "y": Math.round(40 * SCALE_Y), "type": "normal" },
     "42": { "x": Math.round(761 * SCALE_X), "y": Math.round(39 * SCALE_Y), "type": "normal" },
@@ -96,30 +93,31 @@ Object.assign(boardRoute, {
     "46": { "x": Math.round(862 * SCALE_X), "y": Math.round(107 * SCALE_Y), "type": "normal" },
     "47": { "x": Math.round(865 * SCALE_X), "y": Math.round(137 * SCALE_Y), "type": "normal" },
     "48": { "x": Math.round(864 * SCALE_X), "y": Math.round(165 * SCALE_Y), "type": "normal" },
-    "49": { "x": Math.round(852 * SCALE_X), "y": Math.round(195 * SCALE_Y), "type": "gold", "text": "Суздаль\nЭталон русского градостроительного ансамбля" },
+    "49": { "x": Math.round(852 * SCALE_X), "y": Math.round(195 * SCALE_Y), "type": "gold", "text": "Суздаль\nЭталон русского градостроительного ансамбля, представляет собой уникальное зрелище: на компактной территории сосредоточены десятки храмов, колоколен и монастырских комплексов, создающих неповторимый силуэт «города-музея» под открытым небом. Сердцем города является древний Суздальский кремль с его мощными земляными валами, собором Рождества Богородицы с Золотыми вратами и архиерейскими палатами, где хранится богатейшая коллекция церковных древностей. Особый колорит Суздалю придают традиционные праздники вроде Дня огурца, тихие улочки с деревянными домами, украшенными затейливой резьбой, и возможность прокатиться на тройке по заливным лугам, что позволяет полностью погрузиться в атмосферу старорусского быта." },
     "50": { "x": Math.round(822 * SCALE_X), "y": Math.round(198 * SCALE_Y), "type": "normal" },
     "51": { "x": Math.round(789 * SCALE_X), "y": Math.round(191 * SCALE_Y), "type": "normal" },
     "52": { "x": Math.round(757 * SCALE_X), "y": Math.round(203 * SCALE_Y), "type": "normal" },
     "53": { "x": Math.round(729 * SCALE_X), "y": Math.round(219 * SCALE_Y), "type": "normal" },
     "54": { "x": Math.round(709 * SCALE_X), "y": Math.round(235 * SCALE_Y), "type": "fork" }
 });
+
 // ==========================================
 // ЧАСТЬ 3: ПУТЕВОДИТЕЛЬ (ФИНАЛ) И СВЯЗИ
 // ==========================================
 Object.assign(boardRoute, {
-    "56": { "x": Math.round(667 * SCALE_X), "y": Math.round(277 * SCALE_Y), "type": "gold", "text": "Владимир\nДревняя столица Руси, хранит белокаменные шедевры" },
+    "56": { "x": Math.round(667 * SCALE_X), "y": Math.round(277 * SCALE_Y), "type": "gold", "text": "Владимир\nДревняя столица Северо-Восточной Руси, хранит белокаменные шедевры домонгольского зодчества — величественный Успенский собор с фресками Андрея Рублева и изящную Дмитриевскую церковь, стены которой покрыты загадочной резьбой. Золотые ворота, редчайший памятник военно-инженерного искусства XII века, символизируют былую мощь города и открывают панораму на исторический центр, где века переплетаются на каждом шагу. С высокого берега реки Клязьмы открывается захватывающий вид на заречные просторы, который веками вдохновлял летописцев и художников, а сегодня привлекает туристов, желающих ощутить дыхание истории у стен монастырей и старинных валов." },
     "57": { "x": Math.round(643 * SCALE_X), "y": Math.round(294 * SCALE_Y), "type": "normal" },
     "58": { "x": Math.round(619 * SCALE_X), "y": Math.round(315 * SCALE_Y), "type": "normal" },
     "59": { "x": Math.round(598 * SCALE_X), "y": Math.round(337 * SCALE_Y), "type": "normal" },
     "60": { "x": Math.round(590 * SCALE_X), "y": Math.round(363 * SCALE_Y), "type": "normal" },
-    "61": { "x": Math.round(586 * SCALE_X), "y": Math.round(400 * SCALE_Y), "type": "gold", "text": "Углич\nХранитель драматических страниц истории" },
+    "61": { "x": Math.round(586 * SCALE_X), "y": Math.round(400 * SCALE_Y), "type": "gold", "text": "Углич\nХранитель драматических страниц русской истории, приковывает внимание знаменитым Кремлем на берегу Волги, где разворачивалась загадочная гибель царевича Дмитрия, положившая конец династии Рюриковичей. В этом городе время будто застыло в причудливых формах церкви Димитрия на Крови, возведённой на месте той самой трагедии и поражающей своей яркой расцветкой и мемориальным значением. Особую атмосферу Углича создаёт его статус центра сыроварения, где можно не только познакомиться с традиционным промыслом, но и попробовать изысканные местные сорта, ставшие новой гордостью города." },
     "62": { "x": Math.round(583 * SCALE_X), "y": Math.round(431 * SCALE_Y), "type": "normal" },
-    "63": { "x": Math.round(580 * SCALE_X), "y": Math.round(464 * SCALE_Y), "type": "gold", "text": "Плёс\nВдохновлял великого пейзажиста Исаака Левитана" },
+    "63": { "x": Math.round(580 * SCALE_X), "y": Math.round(464 * SCALE_Y), "type": "gold", "text": "Плёс\nВдохновлял великого пейзажиста Исаака Левитана, и сегодня покоряет своими панорамными видами на Волгу, запечатлёнными на знаменитых полотнах «Тихая обитель» и «Над вечным покоем». Уютные набережные с деревянными домами и старинными церквями ведут к Соборной горе, где сохранились валы древнего городища и открывается самый живописный вид на речные плёсы. Особый шарм городу придают многочисленные арт-галереи и музей Левитана, благодаря которым Плёс сохраняет статус одной из творческих столиц Поволжья, притягивающей художников и ценителей искусства." },
     "64": { "x": Math.round(590 * SCALE_X), "y": Math.round(486 * SCALE_Y), "type": "normal" },
     "65": { "x": Math.round(600 * SCALE_X), "y": Math.round(511 * SCALE_Y), "type": "normal" },
     "66": { "x": Math.round(612 * SCALE_X), "y": Math.round(537 * SCALE_Y), "type": "normal" },
     "67": { "x": Math.round(625 * SCALE_X), "y": Math.round(560 * SCALE_Y), "type": "normal" },
-    "68": { "x": Math.round(637 * SCALE_X), "y": Math.round(587 * SCALE_Y), "type": "gold", "text": "Юрьев-Польский\nОснован Юрием Долгоруким" },
+    "68": { "x": Math.round(637 * SCALE_X), "y": Math.round(587 * SCALE_Y), "type": "gold", "text": "Юрьев-Польский\nОснован Юрием Долгоруким. Георгиевский собор славится своей удивительной древней каменной резьбой, покрывающей стены богатыми узорами." },
     "69": { "x": Math.round(602 * SCALE_X), "y": Math.round(578 * SCALE_Y), "type": "normal" },
     "70": { "x": Math.round(575 * SCALE_X), "y": Math.round(563 * SCALE_Y), "type": "normal" },
     "71": { "x": Math.round(546 * SCALE_X), "y": Math.round(548 * SCALE_Y), "type": "normal" },
@@ -141,7 +139,7 @@ Object.assign(boardRoute, {
     "87": { "x": Math.round(105 * SCALE_X), "y": Math.round(179 * SCALE_Y), "type": "normal" },
     "88": { "x": Math.round(110 * SCALE_X), "y": Math.round(151 * SCALE_Y), "type": "normal" },
     "89": { "x": Math.round(127 * SCALE_X), "y": Math.round(123 * SCALE_Y), "type": "normal" },
-    "90": { "x": Math.round(154 * SCALE_X), "y": Math.round(110 * SCALE_Y), "type": "gold", "text": "Александров\nБывшая опричная столица Ивана Грозного" },
+    "90": { "x": Math.round(154 * SCALE_X), "y": Math.round(110 * SCALE_Y), "type": "gold", "text": "Александров\nБывшая опричная столица Ивана Грозного. Здесь вершилась история Российского государства, а старинные палаты до сих пор хранят дух той грозной эпохи." },
     "91": { "x": Math.round(174 * SCALE_X), "y": Math.round(127 * SCALE_Y), "type": "normal" },
     "92": { "x": Math.round(202 * SCALE_X), "y": Math.round(137 * SCALE_Y), "type": "normal" },
     "93": { "x": Math.round(227 * SCALE_X), "y": Math.round(140 * SCALE_Y), "type": "normal" },
@@ -156,7 +154,7 @@ Object.assign(boardRoute, {
     "103": { "x": Math.round(511 * SCALE_X), "y": Math.round(199 * SCALE_Y), "type": "normal" },
     "104": { "x": Math.round(543 * SCALE_X), "y": Math.round(207 * SCALE_Y), "type": "normal" },
     "105": { "x": Math.round(574 * SCALE_X), "y": Math.round(211 * SCALE_Y), "type": "normal" },
-    "106": { "x": Math.round(600 * SCALE_X), "y": Math.round(200 * SCALE_Y), "type": "gold", "text": "Муром\nРодина былинного богатыря Ильи Муромца" },
+    "106": { "x": Math.round(600 * SCALE_X), "y": Math.round(200 * SCALE_Y), "type": "gold", "text": "Муром\nРодина былинного богатыря Ильи Муромца и святых Петра и Февронии, покровителей семьи и верности." },
     "107": { "x": Math.round(627 * SCALE_X), "y": Math.round(194 * SCALE_Y), "type": "normal" },
     "108": { "x": Math.round(650 * SCALE_X), "y": Math.round(177 * SCALE_Y), "type": "normal" },
     "109": { "x": Math.round(661 * SCALE_X), "y": Math.round(151 * SCALE_Y), "type": "normal" }, 
@@ -167,7 +165,7 @@ Object.assign(boardRoute, {
     "114": { "x": Math.round(805 * SCALE_X), "y": Math.round(303 * SCALE_Y), "type": "normal" },
     "115": { "x": Math.round(834 * SCALE_X), "y": Math.round(313 * SCALE_Y), "type": "normal" },
     "116": { "x": Math.round(862 * SCALE_X), "y": Math.round(321 * SCALE_Y), "type": "normal" },
-    "117": { "x": Math.round(904 * SCALE_X), "y": Math.round(327 * SCALE_Y), "type": "gold", "text": "Рязань\nДревний рязанский Кремль и старинные улочки" },
+    "117": { "x": Math.round(904 * SCALE_X), "y": Math.round(327 * SCALE_Y), "type": "gold", "text": "Рязань\nДревний рязанский Кремль и старинные улочки. Родина великого русского поэта Сергея Есенина." },
     "118": { "x": Math.round(906 * SCALE_X), "y": Math.round(355 * SCALE_Y), "type": "normal" },
     "119": { "x": Math.round(898 * SCALE_X), "y": Math.round(385 * SCALE_Y), "type": "normal" },
     "120": { "x": Math.round(894 * SCALE_X), "y": Math.round(410 * SCALE_Y), "type": "normal" },
@@ -191,11 +189,12 @@ function getNextCellId(currentId, goesFork) {
     if (num === 109) return "34";
     if (num === 110) return goesFork ? "111" : "56";
     if (num === 129) return "64";
-    if (num === 78) return null; 
+    if (num === 78) return null;
     let nextPossible = (num + 1).toString();
     if (boardRoute[nextPossible]) return nextPossible;
     return null;
 }
+
 
 // ==========================================
 // ЧАСТЬ 4: СТАРТ И ОБНОВЛЕННЫЙ ЦВЕТ КНОПКИ
