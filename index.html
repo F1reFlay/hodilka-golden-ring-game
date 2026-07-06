@@ -33,7 +33,8 @@ canvas { border: 4px solid #2e3440; background: #16181c; border-radius: 16px; bo
 .btn-roll:active:not(:disabled) { transform: translateY(-1px) scale(0.97); }
 .btn-roll:disabled { color: #ffffff; cursor: not-allowed; box-shadow: none; transform: none; }
 #turn-indicator { font-size: 18px; font-weight: bold; color: #8be9fd; text-align: center; padding: 12px; background: #232830; border-radius: 12px; border: 1px solid #3b4252; }
-#dice-zone { font-size: 50px; text-align: center; margin: 5px 0; background: #232830; border-radius: 16px; padding: 15px; border: 1px solid #3b4252; }
+#dice-zone { display: flex; justify-content: center; align-items: center; min-height: 180px; background: #232830; border-radius: 16px; padding: 10px; border: 1px solid #3b4252; overflow: hidden; }
+#dice-video { width: 100%; height: auto; display: block; max-height: 170px; object-fit: contain; }
 .status-bookmark { width: 100%; background: #16181c; border: 1px solid #2e3440; border-radius: 16px; padding: 15px; box-shadow: 0 8px 20px rgba(0,0,0,0.4); box-sizing: border-box; }
 .bookmark-title { font-size: 14px; font-weight: bold; color: #a482ff; border-bottom: 1px solid #2e3440; padding-bottom: 6px; margin-bottom: 10px; text-align: center; text-transform: uppercase; letter-spacing: 1px; }
 .player-status-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; font-size: 14px; }
@@ -87,17 +88,18 @@ body { padding: 15px; }
 #side-panel { padding: 12px; gap: 12px; }
 .btn-roll { padding: 14px; font-size: 16px; border-radius: 20px; }
 #turn-indicator { font-size: 14px; padding: 8px; }
-#dice-zone { font-size: 36px; padding: 10px; }
+#dice-zone { font-size: 36px; padding: 10px; min-height: 140px; }
 #win-modal-content { width: 90%; }
 }
 </style>
 </head>
 
+
 <!-- ========================================== -->
 <!-- ИНДЕКС ЧАСТЬ 3: HTML СТРУКТУРА ПРИЛОЖЕНИЯ  -->
 <!-- ========================================== -->
 <body>
-<div class="title-container" style="text-align: center;">
+<div class="title-container">
 <div class="small-subtitle">Игра-ходилка</div>
 <div class="game-title">Золотое кольцо России</div>
 </div>
@@ -124,12 +126,13 @@ body { padding: 15px; }
 </div>
 <div id="side-panel">
 <div id="turn-indicator">Ожидание...</div>
-<div id="dice-zone">🎲</div>
+<div id="dice-zone">
+<video id="dice-video" playsinline muted></video>
+</div>
 <button id="roll-button" class="btn-roll" onclick="playerTurn()">Бросить кубик</button>
 <div class="status-bookmark">
 <div class="bookmark-title">📜 Путевой Лист</div>
-<div id="bookmark-players-list">
-</div>
+<div id="bookmark-players-list"></div>
 </div>
 </div>
 </div>
@@ -158,5 +161,6 @@ body { padding: 15px; }
 <script src="game.js"></script>
 </body>
 </html>
+
 
 
