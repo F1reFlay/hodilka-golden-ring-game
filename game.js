@@ -199,7 +199,7 @@ function getNextCellId(currentId, goesFork) {
 }
 
 // ==========================================
-// ГЕЙМ ЧАСТЬ 4: ПРАВИЛА И ЗАПУСК РЕЖИМОВ
+// ГЕЙМ ЧАСТЬ 4: ПРАВИЛА И СТАРТ РЕЖИМОВ ИГРЫ
 // ==========================================
 const gameRulesText = "ПРАВИЛА\nИгры-Путешествия «Золотое кольцо России»\n\n" +
 "• Поставьте все фишки игроков на поле «Москва».\n\n" +
@@ -238,13 +238,14 @@ function startGame(totalPlayers, hasBots) {
             currentCell: "5",
             color: playerColors[i],
             skipNextTurn: false,
-            isJustGotBonus: false // Флаг для отображения в путевом листе
+            isJustGotBonus: false
         });
     }
     
     currentTurn = 0;
     isMoving = false;
     updateUI();
+    
     drawGame();
 }
 
@@ -298,7 +299,6 @@ function updateUI() {
         rollButton.style.color = "#ffffff";
     }
 
-    // Динамическое обновление путевого листа (закладки статусов)
     const listContainer = document.getElementById("bookmark-players-list");
     if (listContainer) {
         listContainer.innerHTML = "";
@@ -325,8 +325,6 @@ function updateUI() {
     }
 }
 
-
-
 // ==========================================
 // ГЕЙМ ЧАСТЬ 5: ДВИЖЕНИЕ ФИШЕК И СМЕНА ХОДОВ
 // ==========================================
@@ -335,14 +333,12 @@ function playerTurn() {
     executeTurn();
 }
 
+// Запуск броска кубика
 function executeTurn() {
     if (document.getElementById("win-modal").style.display === "block") return;
     
     isMoving = true;
-    
-    // Сбрасываем визуальный золотой статус игрока перед новым броском кубика
     players[currentTurn].isJustGotBonus = false;
-    
     updateUI(); 
     const activePlayer = players[currentTurn];
     
@@ -408,16 +404,15 @@ function checkCellEffect(player) {
     isExtraTurnEarned = false;
     
     if (cell) {
-        // ИСПРАВЛЕНО: Проверка идет по точному техническому флагу клетки
         if (cell.type === "gold" || cell.isBonus) {
-            player.isJustGotBonus = true; // Зажигаем статус для путевого листа
+            player.isJustGotBonus = true;
             isExtraTurnEarned = true;
             
             if (!player.isBot) {
                 document.getElementById("gold-modal-text").textContent = cell.text;
                 document.getElementById("gold-modal").style.display = "block";
                 updateUI();
-                return; // Ждем человека
+                return;
             }
         }
         if (cell.type === "swamp") { 
@@ -454,3 +449,4 @@ function nextTurn() {
         setTimeout(() => { executeTurn(); }, 1000); 
     }
 }
+
