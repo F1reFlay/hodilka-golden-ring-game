@@ -199,7 +199,7 @@ function getNextCellId(currentId, goesFork) {
 
 
 // ==========================================
-// ГЕЙМ ЧАСТЬ 4: ПРАВИЛА И СТАРТ РЕЖИМОВ ИГРЫ
+// ГЕЙМ ЧАСТЬ 4: ПРАВИЛА И ЗАПУСК РЕЖИМОВ ИГРЫ
 // ==========================================
 const gameRulesText = "ПРАВИЛА\nИгры-Путешествия «Золотое кольцо России»\n\n" +
 "• Поставьте все фишки игроков на поле «Москва».\n\n" +
@@ -246,7 +246,6 @@ function startGame(totalPlayers, hasBots) {
     isMoving = false;
     updateUI();
     
-    // ИСПРАВЛЕНО: При старте игры сразу выводим в окошко кубик "cubic_1.webm", чтобы зона не пустовала до первого клика!
     const videoEl = document.getElementById("dice-video");
     if (videoEl) {
         videoEl.src = "cubic_1.webm";
@@ -270,20 +269,44 @@ function drawGame() {
         }, { once: true });
     }
     
-    players.forEach((player, index) => {
-        const cell = boardRoute[player.currentCell];
+    // ИСПРАВЛЕНО: Умное динамическое расталкивание фишек по центру клеток
+    // Сначала группируем игроков, которые стоят на одинаковых клетках
+    const cellGroups = {};
+    players.forEach(player => {
+        if (!cellGroups[player.currentCell]) {
+            cellGroups[player.currentCell] = [];
+        }
+        cellGroups[player.currentCell].push(player);
+    });
+
+    // Рисуем фишки с учетом их количества на клетке
+    Object.keys(cellGroups).forEach(cellId => {
+        const group = cellGroups[cellId];
+        const cell = boardRoute[cellId];
+        
         if (cell) {
-            const offsetX = (index % 2 === 0 ? 8 : -8);
-            const offsetY = (index > 1 ? 8 : -8);
-            
-            ctx.beginPath();
-            ctx.arc(cell.x + offsetX, cell.y + offsetY, 12, 0, Math.PI * 2);
-            ctx.fillStyle = player.color;
-            ctx.fill();
-            ctx.strokeStyle = "#ffffff";
-            ctx.lineWidth = 2;
-            ctx.stroke();
-            ctx.closePath();
+            group.forEach((player, index) => {
+                let offsetX = 0;
+                let offsetY = 0;
+                
+                // Если на одной клетке больше одного игрока, плавно расталкиваем их по кругу
+                if (group.length > 1) {
+                    const angle = (index * 2 * Math.PI) / group.length;
+                    const radius = 9; // Расстояние расталкивания от центра клетки
+                    offsetX = Math.cos(angle) * radius;
+                    offsetY = Math.sin(angle) * radius;
+                }
+                
+                ctx.beginPath();
+                // ИСПРАВЛЕНО: Уменьшили радиус фишки до 8 для большей аккуратности
+                ctx.arc(cell.x + offsetX, cell.y + offsetY, 8, 0, Math.PI * 2);
+                ctx.fillStyle = player.color;
+                ctx.fill();
+                ctx.strokeStyle = "#ffffff";
+                ctx.lineWidth = 1.5;
+                ctx.stroke();
+                ctx.closePath();
+            });
         }
     });
 }
