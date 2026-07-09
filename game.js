@@ -382,25 +382,24 @@ function executeTurn() {
     const videoEl = document.getElementById("dice-video");
     
     if (videoEl) {
-        // ИСПРАВЛЕНО: Загружаем твои новые легкие 3D WebM ролики
         videoEl.src = "cubic_" + diceRoll + ".webm";
         videoEl.load();
         
         videoEl.play().catch(err => {
             console.warn("Видео заблокировано браузером, шагаем сразу:", err);
-            moveStepByStep(activePlayer, diceRoll);
+            moveStepByStep(activePlayer, diceRoll, diceRoll);
         });
         
-        // Ждем окончания ролика в 60 FPS перед тем, как фишка пойдет
         videoEl.onended = function() {
-            moveStepByStep(activePlayer, diceRoll);
+            moveStepByStep(activePlayer, diceRoll, diceRoll);
         };
     } else {
-        moveStepByStep(activePlayer, diceRoll);
+        moveStepByStep(activePlayer, diceRoll, diceRoll);
     }
 }
 
-function moveStepByStep(player, stepsLeft) {
+// ИСПРАВЛЕНО: Добавили аргумент totalRoll, чтобы код знал изначальное число на кубике
+function moveStepByStep(player, stepsLeft, totalRoll) {
     if (stepsLeft <= 0) {
         checkCellEffect(player);
         return;
@@ -408,6 +407,7 @@ function moveStepByStep(player, stepsLeft) {
     
     const currentCellData = boardRoute[player.currentCell];
     const isExactForkStop = (stepsLeft === 1 && currentCellData && currentCellData.type === "fork");
+    
     const nextCellId = getNextCellId(player.currentCell, isExactForkStop);
     
     if (nextCellId === null) {
@@ -418,7 +418,13 @@ function moveStepByStep(player, stepsLeft) {
     player.currentCell = nextCellId;
     drawGame();
     
-    setTimeout(() => { moveStepByStep(player, stepsLeft - 1); }, 300);
+    // ИСПРАВЛЕНО: Аниматорский расчёт скорости. Чем больше выпало на кубике, тем размереннее шаг!
+    let stepDelay = 500; // Базовая скорость для 1, 2, 3 шагов
+    if (totalRoll >= 4) {
+        stepDelay = 700; // Замедляем до 700мс для длинных бросков (4, 5, 6), чтобы убрать суету
+    }
+    
+    setTimeout(() => { moveStepByStep(player, stepsLeft - 1, totalRoll); }, stepDelay);
 }
 
 function showWinModal(player) {
@@ -497,4 +503,3 @@ function nextTurn() {
         setTimeout(() => { executeTurn(); }, 1000); 
     }
 }
-
