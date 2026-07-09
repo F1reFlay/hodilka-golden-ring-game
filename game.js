@@ -182,20 +182,20 @@ Object.assign(boardRoute, {
     "129": { "x": 536, "y": 409, "type": "normal" }
 });
 
-// ИСПРАВЛЕНО: Теперь код проверяет саму клетку старта, железно уводя фишки на развилки при новом броске кубика!
+// ИСПРАВЛЕНО: Теперь аргумент goesFork определяет, сворачиваем ли мы. Если true — уходим в болото/обход, если false — летим мимо прямо!
 function getNextCellId(currentId, goesFork) {
     let num = Number(currentId);
     
-    // Если фишка начинает движение, находясь СТРОГО на развилках — уводим её по правильному пути
-    if (num === 14) return "79";  // 1-я развилка: строго по пути болота
-    if (num === 25) return "103"; // 2-я развилка: строго по короткому пути
-    if (num === 110) return "111"; // 3-я развилка: строго по пути болота
+    // Сворачиваем на развилках ТОЛЬКО если goesFork равен true (то есть это первый шаг нового хода с этой клетки)
+    if (num === 14) return goesFork ? "79" : "15";
+    if (num === 25) return goesFork ? "103" : "26";
+    if (num === 110) return goesFork ? "111" : "56";
     
-    // Внутренние телепорты для замыкания длинных и коротких петель маршрута
+    // Внутренние телепорты петель остаются работать всегда
     if (num === 101) return "23";
     if (num === 109) return "34";
     if (num === 129) return "64";
-    if (num === 78) return null; // Финиш игры
+    if (num === 78) return null; // Финиш
     
     let nextPossible = (num + 1).toString();
     if (boardRoute[nextPossible]) return nextPossible;
@@ -392,28 +392,27 @@ function executeTurn() {
         
         videoEl.play().catch(err => {
             console.warn("Видео заблокировано браузером, шагаем сразу:", err);
-            moveStepByStep(activePlayer, diceRoll, diceRoll);
+            moveStepByStep(activePlayer, diceRoll, diceRoll, true); // Передаем true для старта
         });
         
         videoEl.onended = function() {
-            moveStepByStep(activePlayer, diceRoll, diceRoll);
+            moveStepByStep(activePlayer, diceRoll, diceRoll, true); // Передаем true для старта
         };
     } else {
-        moveStepByStep(activePlayer, diceRoll, diceRoll);
+        moveStepByStep(activePlayer, diceRoll, diceRoll, true); // Передаем true для старта
     }
 }
 
-// ИСПРАВЛЕНО: Добавили аргумент totalRoll, чтобы код знал изначальное число на кубике
-function moveStepByStep(player, stepsLeft, totalRoll) {
+// ИСПРАВЛЕНО: Добавили аргумент isFirstStep. На первом шаге с развилки он true, на последующих — false.
+function moveStepByStep(player, stepsLeft, totalRoll, isFirstStep) {
     if (stepsLeft <= 0) {
         checkCellEffect(player);
         return;
     }
     
-    const currentCellData = boardRoute[player.currentCell];
-    const isExactForkStop = (stepsLeft === 1 && currentCellData && currentCellData.type === "fork");
-    
-    const nextCellId = getNextCellId(player.currentCell, isExactForkStop);
+    // ИСПРАВЛЕНО: goesFork равен true ТОЛЬКО если игрок ИЗНАЧАЛЬНО стоял на развилке перед броском кубика
+    const goesFork = isFirstStep;
+    const nextCellId = getNextCellId(player.currentCell, goesFork);
     
     if (nextCellId === null) {
         showWinModal(player);
@@ -423,13 +422,13 @@ function moveStepByStep(player, stepsLeft, totalRoll) {
     player.currentCell = nextCellId;
     drawGame();
     
-    // ИСПРАВЛЕНО: Аниматорский расчёт скорости. Чем больше выпало на кубике, тем размереннее шаг!
-    let stepDelay = 500; // Базовая скорость для 1, 2, 3 шагов
+    let stepDelay = 500; 
     if (totalRoll >= 4) {
-        stepDelay = 700; // Замедляем до 700мс для длинных бросков (4, 5, 6), чтобы убрать суету
+        stepDelay = 700; 
     }
     
-    setTimeout(() => { moveStepByStep(player, stepsLeft - 1, totalRoll); }, stepDelay);
+    // На все последующие шаги внутри этого хода передаем false — фишка больше не будет сворачивать!
+    setTimeout(() => { moveStepByStep(player, stepsLeft - 1, totalRoll, false); }, stepDelay);
 }
 
 function showWinModal(player) {
