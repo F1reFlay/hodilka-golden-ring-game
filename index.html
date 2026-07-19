@@ -1,5 +1,5 @@
 <!-- ========================================== -->
-<!-- ИНДЕКС ЧАСТЬ 1: СТИЛИ ПК И СВЕТЯЩИЙСЯ ТИТЛ -->
+<!-- ИНДЕКС ЧАСТЬ 1: СТИЛИ ПК И ЭКРАН МОДРИНСА  -->
 <!-- ========================================== -->
 <!DOCTYPE html>
 <html lang="ru">
@@ -12,10 +12,12 @@ body { font-family: sans-serif; background: #111213; color: #f1f2f3; margin: 0; 
 .title-container { display: flex; flex-direction: column; align-items: center; margin-top: 10px; margin-bottom: 20px; background: #16181c; padding: 10px 40px; border-radius: 20px; border: 1px solid #2e3440; box-shadow: inset 0 0 15px rgba(164, 130, 255, 0.1), 0 4px 15px rgba(0,0,0,0.4); text-align: center; }
 .small-subtitle { font-size: 12px; font-weight: bold; color: #cbd5e1; text-transform: uppercase; letter-spacing: 4px; margin-bottom: 4px; text-shadow: 0 0 8px rgba(255,255,255,0.2); }
 .game-title { font-size: 32px; font-weight: bold; color: #a482ff; text-transform: uppercase; letter-spacing: 2px; margin: 0; text-shadow: 0 0 10px rgba(164, 130, 255, 0.6), 0 0 20px rgba(164, 130, 255, 0.3); }
-#start-screen { display: block; background: #16181c; padding: 40px; border-radius: 16px; border: 1px solid #2e3440; text-align: center; margin-top: 30px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); max-width: 500px; }
-#start-screen h2 { margin-top: 0; color: #f1f2f3; font-size: 20px; }
-.mode-section { margin-bottom: 20px; border-bottom: 1px solid #2e3440; padding-bottom: 15px; }
-.mode-section:last-of-type { border-bottom: none; }
+/* ОБНОВЛЕНО: Стартовое меню получило фон-картинку и неоновое фиолетовое свечение Modrinth */
+#start-screen { display: block; background: linear-gradient(rgba(22,24,28,0.85), rgba(22,24,28,0.85)), url('start-bg.jpg') center/cover no-repeat; padding: 40px; border-radius: 24px; border: 2px solid #2e3440; text-align: center; margin-top: 30px; box-shadow: 0 0 30px rgba(139, 85, 255, 0.25), 0 10px 40px rgba(0,0,0,0.6); max-width: 550px; width: 100%; box-sizing: border-box; }
+#start-screen h1 { margin-top: 0; margin-bottom: 10px; color: #8b55ff; font-size: 24px; text-transform: uppercase; letter-spacing: 1px; text-shadow: 0 0 10px rgba(139,85,255,0.4); }
+#start-screen h2 { margin-top: 15px; color: #cbd5e1; font-size: 16px; font-weight: normal; }
+.mode-section { margin-bottom: 20px; border-bottom: 1px solid rgba(46,52,64,0.6); padding-bottom: 15px; }
+.mode-section:last-of-type { border-bottom: none; padding-bottom: 0; margin-bottom: 5px; }
 .btn-mode { padding: 12px 24px; font-size: 15px; margin: 6px; cursor: pointer; background: #232830; color: #fff; border: 2px solid #3b4252; border-radius: 20px; font-weight: bold; transition: all 0.2s ease; }
 .btn-mode:hover { border-color: #a482ff; background: #1c1f26; transform: translateY(-2px); box-shadow: 0 6px 15px rgba(164,130,255,0.2); }
 .btn-mode:active { transform: translateY(-1px) scale(0.97); }
@@ -26,7 +28,7 @@ canvas { border: 4px solid #2e3440; background: #16181c; border-radius: 16px; bo
 #side-panel { width: 280px; background: #16181c; border: 1px solid #2e3440; border-radius: 16px; padding: 20px; display: flex; flex-direction: column; gap: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.5); box-sizing: border-box; }
 
 <!-- ========================================== -->
-<!-- ИНДЕКС ЧАСТЬ 2: ОКНА МОДАЛОК И АДАПТИВНОСТЬ -->
+<!-- ИНДЕКС ЧАСТЬ 2: ТАЙМИНГИ И ОКНА ВИКТОРИНЫ  -->
 <!-- ========================================== -->
 .btn-roll { padding: 18px; font-size: 18px; cursor: pointer; background: #50fa7b; color: #111213; border: none; border-radius: 20px; font-weight: bold; width: 100%; transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1); }
 .btn-roll:hover:not(:disabled) { background: #40c762; transform: translateY(-3px); box-shadow: 0 6px 20px rgba(80,250,123,0.4); }
@@ -34,7 +36,6 @@ canvas { border: 4px solid #2e3440; background: #16181c; border-radius: 16px; bo
 .btn-roll:disabled { color: #ffffff; cursor: not-allowed; box-shadow: none; transform: none; }
 #turn-indicator { font-size: 18px; font-weight: bold; color: #8be9fd; text-align: center; padding: 12px; background: #232830; border-radius: 12px; border: 1px solid #3b4252; }
 #dice-zone { display: flex; justify-content: center; align-items: center; min-height: 180px; background: #232830; border-radius: 16px; padding: 10px; border: 1px solid #3b4252; overflow: hidden; }
-/* ИСПРАВЛЕНО: Добавили mix-blend-mode: screen, который убирает чёрный фон у видео на любых телефонах! */
 #dice-video { width: 100%; height: auto; display: block; max-height: 170px; object-fit: contain; mix-blend-mode: screen; }
 .status-bookmark { width: 100%; background: #16181c; border: 1px solid #2e3440; border-radius: 16px; padding: 15px; box-shadow: 0 8px 20px rgba(0,0,0,0.4); box-sizing: border-box; }
 .bookmark-title { font-size: 14px; font-weight: bold; color: #a482ff; border-bottom: 1px solid #2e3440; padding-bottom: 6px; margin-bottom: 10px; text-align: center; text-transform: uppercase; letter-spacing: 1px; }
@@ -46,12 +47,18 @@ canvas { border: 4px solid #2e3440; background: #16181c; border-radius: 16px; bo
 .badge-swamp { background: #ff5555; color: #ffffff; }
 .badge-gold { background: #f1c40f; color: #111213; }
 .badge-normal { color: #6272a4; font-weight: normal; }
+/* ОБНОВЛЕНО: Стили для кнопок вариантов ответов в школьной викторине */
+.quiz-options-box { display: flex; flex-direction: column; gap: 10px; margin-top: 15px; }
+.btn-quiz-opt { padding: 14px; background: #232830; color: #ffffff; border: 1px solid #3b4252; border-radius: 12px; font-size: 14px; cursor: pointer; text-align: left; font-weight: bold; transition: all 0.2s ease; }
+.btn-quiz-opt:hover { background: #2e3440; border-color: #8b55ff; transform: translateX(3px); }
 .modal-layout { display: none; position: fixed; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.6); z-index: 1000; }
 .modal-content-box { position: absolute; left: 0; top: 0; width: 380px; height: 100%; background: #1c1f26; border-right: 4px solid #f1c40f; box-shadow: 5px 0 30px rgba(0, 0, 0, 0.7); padding: 30px 20px; display: flex; flex-direction: column; animation: slideIn 0.3s ease; box-sizing: border-box; }
 #rules-modal-content { border-right: 4px solid #8be9fd; }
+#quiz-modal-content { border-right: 4px solid #50fa7b; }
 @keyframes slideIn { from { transform: translateX(-100%); } to { transform: translateX(0); } }
 .modal-header-text { font-size: 22px; color: #f1c40f; font-weight: bold; letter-spacing: 1.5px; margin-bottom: 25px; text-align: center; border-bottom: 2px solid #3b4252; padding-bottom: 12px; }
 .rules-color-header { color: #8be9fd; }
+.quiz-color-header { color: #50fa7b; }
 .modal-scroll-text { font-size: 16px; line-height: 1.7; color: #e5e9f0; flex-grow: 1; overflow-y: auto; margin-bottom: 25px; padding-right: 10px; white-space: pre-line; }
 .modal-scroll-text::-webkit-scrollbar { width: 6px; }
 .modal-scroll-text::-webkit-scrollbar-thumb { background: #3b4252; border-radius: 4px; }
@@ -84,7 +91,8 @@ body { padding: 15px; }
 .small-subtitle { font-size: 10px; letter-spacing: 3px; }
 .game-title { font-size: 20px; }
 #start-screen { padding: 25px 20px; margin-top: 15px; width: 100%; box-sizing: border-box; }
-#start-screen h2 { font-size: 16px; margin-bottom: 10px; }
+#start-screen h1 { font-size: 18px; }
+#start-screen h2 { font-size: 14px; }
 .btn-mode { padding: 12px 20px; font-size: 14px; margin: 5px; width: calc(100% - 10px); }
 #side-panel { padding: 12px; gap: 12px; }
 .btn-roll { padding: 14px; font-size: 16px; border-radius: 20px; }
@@ -96,7 +104,7 @@ body { padding: 15px; }
 </head>
 
 <!-- ========================================== -->
-<!-- ИНДЕКС ЧАСТЬ 3: HTML СТРУКТУРА ПРИЛОЖЕНИЯ  -->
+<!-- ИНДЕКС ЧАСТЬ 3: СТРУКТУРА С ОКНОМ ВОПРОСОВ -->
 <!-- ========================================== -->
 <body>
 <div class="title-container">
@@ -104,6 +112,7 @@ body { padding: 15px; }
 <div class="game-title">Золотое кольцо России</div>
 </div>
 <div id="start-screen">
+<h1>Добро пожаловать!</h1>
 <div class="mode-section">
 <h2>🤖 Одиночная игра (против ботов):</h2>
 <button class="btn-mode" onclick="startGame(2, true)">Вы + 1 Бот</button>
@@ -143,6 +152,14 @@ body { padding: 15px; }
 <button class="btn-close-modal" onclick="closeGoldModal()">Вернуться в игру</button>
 </div>
 </div>
+<!-- ОБНОВЛЕНО: Новое модальное окно школьной викторины -->
+<div id="quiz-modal" class="modal-layout">
+<div id="quiz-modal-content" class="modal-content-box">
+<div class="modal-header-text quiz-color-header">🧠 ВОПРОС НА БАЛЛЫ</div>
+<div id="quiz-modal-question" class="modal-scroll-text" style="font-weight: bold; margin-bottom: 10px;">Вопрос...</div>
+<div id="quiz-options-container" class="quiz-options-box"></div>
+</div>
+</div>
 <div id="rules-modal" class="modal-layout">
 <div id="rules-modal-content" class="modal-content-box">
 <div class="modal-header-text rules-color-header">📜 ПРАВИЛА ИГРЫ</div>
@@ -153,7 +170,7 @@ body { padding: 15px; }
 <div id="win-modal">
 <div id="win-modal-content">
 <h2 style="color: #a482ff; margin: 0; font-size: 24px; letter-spacing: 1px;">🎉 Путешествие завершено! 🎉</h2>
-<p style="color: #cbd5e1; margin-top: 10px; font-size: 15px;">Определился лидер великого похода:</p>
+<p style="color: #cbd5e1; margin-top: 10px; font-size: 15px;">Лидер великого похода по баллам:</p>
 <div id="winner-name" class="winner-badge">Победитель</div>
 <button class="btn-restart" onclick="backToMenu()">Выбрать другой режим</button>
 </div>
@@ -161,3 +178,4 @@ body { padding: 15px; }
 <script src="game.js"></script>
 </body>
 </html>
+
