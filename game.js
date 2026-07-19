@@ -232,6 +232,7 @@ const quizDatabase = {
         hint: "По легенде, Ярослав Мудрый зарубил топором священного медведя местных язычников и заложил на этом месте христианский город."
     }
 };
+
 // ==========================================
 // ГЕЙМ ЧАСТЬ 4Б: БАЗА ВОПРОСОВ (2) И ЛОББИ
 // ==========================================
@@ -314,7 +315,7 @@ function startGame(totalPlayers, hasBots) {
     }
     
     currentTurn = 0;
-    isMoving = false;
+    isMoving = true;
     updateUI();
     
     const videoEl = document.getElementById("dice-video");
@@ -324,6 +325,10 @@ function startGame(totalPlayers, hasBots) {
     }
     
     drawGame();
+
+    soundGold.play().catch(() => {});
+    document.getElementById("gold-modal-text").textContent = "Москва\nСтолица нашей Родины и отправная точка великого путешествия! Отсюда начинается знаменитый маршрут 'Золотое кольцо России'. Изучайте историю древних городов, открывайте новые регионы и набирайте баллы за правильные ответы!";
+    document.getElementById("gold-modal").style.display = "block";
 }
 
 function drawGame() {
