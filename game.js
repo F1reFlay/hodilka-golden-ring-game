@@ -45,6 +45,17 @@ let isExtraTurnEarned = false;
 
 const playerColors = ["#a482ff", "#50fa7b", "#ffb86c", "#8be9fd"];
 
+const gameRulesText = "ПРАВИЛА ИГРЫ\n\n• Передвигайте фишки по очереди согласно выпавшему числу на кубике.\n• Золотые города дают право на дополнительный ход и открывают вопросы.\n• Болота заставляют пропустить следующий ход.\n• Побеждает тот, кто наберет больше всего баллов к финишу!";
+
+function openRulesModal() {
+    document.getElementById("rules-modal-text").textContent = gameRulesText;
+    document.getElementById("rules-modal").style.display = "block";
+}
+
+function closeRulesModal() {
+    document.getElementById("rules-modal").style.display = "none";
+}
+
 const boardRoute = {
     "5": { "x": 81, "y": 469, "type": "normal", "city": "Москва" },
     "6": { "x": 120, "y": 445, "type": "normal", "city": "Москва" },
@@ -58,7 +69,7 @@ const boardRoute = {
     "14": { "x": 231, "y": 323, "type": "fork", "city": "Переславль-Залесский" },
     "15": { "x": 253, "y": 319, "type": "normal", "city": "Переславль-Залесский" },
     "16": { "x": 277, "y": 313, "type": "normal", "city": "Переславль-Залесский" },
-    "17": { "x": 301, "y": 307, "type": "normal" , "city": "Переславль-Залесский"},
+    "17": { "x": 301, "y": 307, "type": "normal", "city": "Переславль-Залесский" },
     "18": { "x": 318, "y": 295, "type": "gold", "isBonus": true, "city": "Переславль-Залесский", "text": "Переславль-Залесский\nДревний город, хранит память о рождении Александра Невского. На берегу Плещеева озера хранится ботик Петра I! Вы получаете дополнительный ход." },
     "19": { "x": 325, "y": 273, "type": "normal", "city": "Ростов Великий" },
     "20": { "x": 335, "y": 254, "type": "normal", "city": "Ростов Великий" },
