@@ -423,16 +423,8 @@ function updateUI() {
     
     if (!activePlayer.isBot && !isMoving) {
         rollButton.disabled = false;
-        rollButton.style.background = "#50fa7b";
-        rollButton.style.color = "#111213";
-        rollButton.style.textShadow = "0 0 8px rgba(80,250,123,0.8)";
-        rollButton.style.boxShadow = "0 0 15px rgba(80,250,123,0.25)";
     } else {
         rollButton.disabled = true;
-        rollButton.style.background = "#ff5555";
-        rollButton.style.color = "#ffffff";
-        rollButton.style.textShadow = "0 0 8px rgba(255,85,85,0.8)";
-        rollButton.style.boxShadow = "0 0 15px rgba(255,85,85,0.15)";
     }
 
     const listContainer = document.getElementById("bookmark-players-list");
@@ -704,4 +696,3 @@ function nextTurn() {
         setTimeout(() => { executeTurn(); }, 1000); 
     }
 }
-
