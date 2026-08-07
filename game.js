@@ -199,6 +199,7 @@ function getNextCellId(currentId, goesFork) {
     let num = Number(currentId);
     if (num === 14) return goesFork ? "79" : "15";
     if (num === 25) return goesFork ? "103" : "26";
+    if (num === 54) return "56";
     if (num === 110) return goesFork ? "111" : "56";
     if (num === 101) return "23";
     if (num === 109) return "34";
@@ -208,7 +209,6 @@ function getNextCellId(currentId, goesFork) {
     if (boardRoute[nextPossible]) return nextPossible;
     return null;
 }
-
 // ==========================================
 // ГЕЙМ ЧАСТЬ 4А: БАЗА ШКОЛЬНЫХ ВОПРОСОВ (1)
 // ==========================================
