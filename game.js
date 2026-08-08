@@ -210,7 +210,7 @@ function getNextCellId(currentId, goesFork) {
 }
 
 // ==========================================
-// ГЕЙМ ЧАСТЬ 4А: БАЗА ШКОЛЬНЫХ ВОПРОСОВ (1)
+// ГЕЙМ ЧАСТЬ 4: ВОПРОСЫ, ЛОББИ И РЕНДЕР
 // ==========================================
 const quizDatabase = {
     "Москва": [
@@ -241,9 +241,6 @@ const quizDatabase = {
     ]
 };
 
-// ==========================================
-// ГЕЙМ ЧАСТЬ 4Б: БАЗА ВОПРОСОВ (ПРОДОЛЖЕНИЕ)
-// ==========================================
 Object.assign(quizDatabase, {
     "Переславль-Залесский": [
         { q: "Память о каком великом русском князе хранит Переславль-Залесский?", a: ["О князе Дмитрии Донском.", "Об Александре Невском."], right: 1, hint: "Переславль-Залесский, древний город Золотого кольца, хранит память о рождении великого русского полководца и князя — Александра Невского, чей памятник встречает гостей у стен старинного Спасо-Преображенского собора. На живописном берегу Плещеева озера можно увидеть знаменитый Синий камень — загадочный валун, которому поклонялись еще древние меряне и который сохранил свою магическую ауру до наших дней. Эксклюзивным музеем города является «Ботик Петра I», где хранится единственный уцелевший корабль потешной флотилии юного императора, положившей начало российскому военному флоту. Спасо-Преображенский собор – древнейших храм Переславля-Залесского. Единственный из белокаменных соборов Руси XII века, дошедший до нас почти в первозданном виде. Он был заложен в 1152 году Юрием Долгоруким и послужил местом крещения Александра Невского. На его древних стенах были обнаружены неповторимые граффити, в том числе список убийц князя Андрея Боголюбского. Троицкий собор Свято-Троицкого Данилова монастыря – возведены в 1530-32гг по обету великого князя Василия III в честь рождения долгожданного наследника, будущего царя Ивана Грозного. Монастырь основал преподобный Даниил Переславский, который стал крестным отцом младенца. Успенский Горицкий монастырь – одна из старейших обителей, не действующая сегодня: в его стенах размещается Переславский музей-заповедник с коллекцией древнерусской живописи и церковного искусства." },
@@ -358,30 +355,35 @@ Object.assign(quizDatabase, {
     ]
 });
 
-// ==========================================
-// ГЕЙМ ЧАСТЬ 4В: ЛОББИ И РЕНДЕР
-// ==========================================
 let wizardMode = null;
 let wizardBotAccuracy = 0.4;
 let wizardColors = [];
+let wizardNames = [];
+let wizardTotalSteps = 0;
+
+const botNamePool = ["Даня", "Катя", "Диана", "Глеб", "Денис", "Соня", "Настя", "Полина", "Вика", "Артём", "Тимофей", "Максим"];
+
+function clearDynamicSteps() {
+    const dotsContainer = document.getElementById("step-dots");
+    dotsContainer.querySelectorAll('.step-dot:not([data-step="0"])').forEach(d => d.remove());
+
+    const pagesContainer = document.getElementById("step-pages");
+    pagesContainer.querySelectorAll('.step-page:not([data-step="0"])').forEach(p => p.remove());
+}
 
 function resetWizard() {
     wizardMode = null;
     wizardBotAccuracy = 0.4;
     wizardColors = [];
+    wizardNames = [];
+    wizardTotalSteps = 0;
 
     document.querySelectorAll(".btn-mode").forEach(b => b.classList.remove("btn-mode-selected"));
 
-    const dotsContainer = document.getElementById("step-dots");
-    dotsContainer.querySelectorAll('.step-dot:not([data-step="0"])').forEach(d => d.remove());
-    const dot0 = dotsContainer.querySelector('.step-dot[data-step="0"]');
+    const dot0 = document.querySelector('.step-dot[data-step="0"]');
     if (dot0) { dot0.classList.remove("filled", "active"); }
 
-    const pagesContainer = document.getElementById("step-pages");
-    pagesContainer.querySelectorAll('.step-page:not([data-step="0"])').forEach(p => p.remove());
-
-    const startBtn = document.getElementById("wizard-start-button");
-    if (startBtn) { startBtn.style.display = "none"; }
+    clearDynamicSteps();
 
     goToStep(0);
 }
@@ -393,12 +395,38 @@ function goToStep(stepIndex) {
     document.querySelectorAll(".step-dot").forEach(d => {
         d.classList.toggle("active", Number(d.dataset.step) === stepIndex);
     });
+    updateWizardButton(stepIndex);
+}
+
+function updateWizardButton(stepIndex) {
+    const btn = document.getElementById("wizard-start-button");
+    if (!btn) return;
+
+    if (stepIndex === 0 || !wizardMode) {
+        btn.style.display = "none";
+        return;
+    }
+
+    btn.style.display = "block";
+
+    if (stepIndex >= wizardTotalSteps) {
+        btn.textContent = "Начать 🚀";
+        btn.onclick = confirmStartGame;
+    } else {
+        btn.textContent = "Далее ▸";
+        btn.onclick = function() {
+            const dot = document.querySelector('.step-dot[data-step="' + stepIndex + '"]');
+            if (dot) { dot.classList.add("filled"); }
+            goToStep(stepIndex + 1);
+        };
+    }
 }
 
 function addStepDot(stepIndex) {
     const dot = document.createElement("button");
-    dot.className = "step-dot";
+    dot.className = "step-dot step-dot-flow-in";
     dot.dataset.step = stepIndex;
+    dot.style.animationDelay = ((stepIndex - 1) * 70) + "ms";
     dot.onclick = function() { goToStep(stepIndex); };
     document.getElementById("step-dots").appendChild(dot);
     return dot;
@@ -432,12 +460,15 @@ function hueToHex(hue) {
 const defaultWizardHues = [255, 135, 30, 190];
 
 function buildDynamicSteps() {
+    clearDynamicSteps();
     let stepIndex = 1;
     wizardColors = [];
+    wizardNames = [];
+
+    const humanCount = wizardMode.hasBots ? 1 : wizardMode.totalPlayers;
 
     if (wizardMode.hasBots) {
-        const dot = addStepDot(stepIndex);
-        dot.classList.add("filled");
+        addStepDot(stepIndex);
 
         const page = document.createElement("div");
         page.className = "step-page";
@@ -454,11 +485,8 @@ function buildDynamicSteps() {
         stepIndex++;
     }
 
-    const humanCount = wizardMode.hasBots ? 1 : wizardMode.totalPlayers;
-
     for (let i = 0; i < humanCount; i++) {
-        const dot = addStepDot(stepIndex);
-        dot.classList.add("filled");
+        addStepDot(stepIndex);
 
         const defaultHue = defaultWizardHues[i % defaultWizardHues.length];
         const defaultHex = hueToHex(defaultHue);
@@ -480,7 +508,24 @@ function buildDynamicSteps() {
         stepIndex++;
     }
 
-    checkWizardComplete();
+    addStepDot(stepIndex);
+    const namesPage = document.createElement("div");
+    namesPage.className = "step-page";
+    namesPage.dataset.step = stepIndex;
+    let inputsHTML =
+        '<h1 class="menu-main-title">Имена игроков</h1>' +
+        '<h2 class="menu-sub-title">Впишите имя, если хотите — можно оставить пустым</h2>' +
+        '<div class="names-input-box">';
+    for (let i = 0; i < humanCount; i++) {
+        wizardNames.push("");
+        const placeholderLabel = humanCount > 1 ? ("Игрок " + (i + 1)) : "Ваше имя";
+        inputsHTML += '<input type="text" class="wizard-name-input" placeholder="' + placeholderLabel + '" maxlength="14" oninput="updatePlayerName(' + i + ', this.value)">';
+    }
+    inputsHTML += '</div>';
+    namesPage.innerHTML = inputsHTML;
+    document.getElementById("step-pages").appendChild(namesPage);
+
+    wizardTotalSteps = stepIndex;
 }
 
 function selectMode(totalPlayers, hasBots, btnEl) {
@@ -507,13 +552,8 @@ function updatePlayerColor(playerIndex, hueValue) {
     if (swatch) { swatch.style.background = hex; }
 }
 
-function checkWizardComplete() {
-    const totalDots = document.querySelectorAll(".step-dot").length;
-    const filledDots = document.querySelectorAll(".step-dot.filled").length;
-    const startBtn = document.getElementById("wizard-start-button");
-    if (startBtn) {
-        startBtn.style.display = (totalDots > 0 && filledDots === totalDots) ? "block" : "none";
-    }
+function updatePlayerName(playerIndex, value) {
+    wizardNames[playerIndex] = value.trim();
 }
 
 function zoomOutThen(el, callback) {
@@ -536,6 +576,15 @@ function openModeSelection() {
     });
 }
 
+function pickRandomBotNames(count) {
+    const shuffled = botNamePool.slice().sort(() => Math.random() - 0.5);
+    const result = [];
+    for (let i = 0; i < count; i++) {
+        result.push(shuffled[i % shuffled.length]);
+    }
+    return result;
+}
+
 function confirmStartGame() {
     if (!wizardMode) return;
     if (wizardMode.hasBots) {
@@ -544,7 +593,7 @@ function confirmStartGame() {
 
     const fromEl = document.getElementById("start-screen");
     zoomOutThen(fromEl, () => {
-        startGame(wizardMode.totalPlayers, wizardMode.hasBots, wizardColors);
+        startGame(wizardMode.totalPlayers, wizardMode.hasBots, wizardColors, wizardNames);
         const toEl = document.getElementById("game-interface");
         toEl.classList.add("screen-zoom-in");
         setTimeout(() => { toEl.classList.remove("screen-zoom-in"); }, 350);
@@ -553,7 +602,7 @@ function confirmStartGame() {
 
 let preloadedVideos = [];
 
-function startGame(totalPlayers, hasBots, customColors) {
+function startGame(totalPlayers, hasBots, customColors, customNames) {
     document.getElementById("start-screen").style.display = "none";
     document.getElementById("game-interface").style.display = "flex";
     
@@ -567,22 +616,35 @@ function startGame(totalPlayers, hasBots, customColors) {
         v.src = "cubic_" + i + ".webm"; v.preload = "auto";
         preloadedVideos.push(v);
     }
+
+    const botCount = hasBots ? totalPlayers - 1 : 0;
+    const botNames = pickRandomBotNames(botCount);
     
     players = [];
     let humanIndex = 0;
+    let botIndex = 0;
     for (let i = 0; i < totalPlayers; i++) {
         let isPlayerABot = false;
         if (hasBots && i !== 0) { isPlayerABot = true; }
 
         let color = playerColors[i];
-        if (!isPlayerABot && customColors && customColors[humanIndex]) {
-            color = customColors[humanIndex];
+        let name;
+
+        if (isPlayerABot) {
+            name = botNames[botIndex] || ("Бот " + (botIndex + 1));
+            botIndex++;
+        } else {
+            if (customColors && customColors[humanIndex]) {
+                color = customColors[humanIndex];
+            }
+            const typedName = customNames && customNames[humanIndex] ? customNames[humanIndex] : "";
+            name = typedName || ("Игрок " + (humanIndex + 1));
             humanIndex++;
         }
         
         players.push({
             id: i,
-            name: isPlayerABot ? "Бот " + i : "Игрок " + (i + 1),
+            name: name,
             isBot: isPlayerABot,
             currentCell: "5",
             color: color,
@@ -602,7 +664,7 @@ function startGame(totalPlayers, hasBots, customColors) {
     drawGame();
 
     soundGold.play().catch(() => {});
-    document.getElementById("gold-modal-text").textContent = "Москва, являющаяся отправной точкой и культурным эпицентром всего маршрута, демонстрирует многовековое наследие российского государства — от монументальных стен Кремля и соборов Соборной площади до современных арт-кластеров, связывая прошлое с настоящим. В отличие от камерных городов Золотого кольца, столица поражает масштабом и разнообразием: всемирно известные музеи-заповедники Коломенское и Царицыно соседствуют с авангардными галереями, создавая многогранную палитру русской культуры. Здесь можно проследить всю историю отечественного зодчества: шедевры древнерусской архитектуры в районе Зарядье, великолепие сталинского ампира на высотках и новаторские проекты Москва-Сити, визуализирующие многовековое развитие страны. Храм Василия Блаженного (Покровский собор) – один из самых узнаваемых символов России, построен по велению Ивана Грозного в честь покорения Казанского ханства. Уникальный ансамбль собора состоит из девяти церквей на одном фундаменте. Церкви символизируют дни решающих сражений. Успенский собор Московского Кремля – главный кафедральный собор России, построен в конце XV века, служил местом коронации русский царей и поставления митрополитов. Это старейшее полностью сохранившееся здание Москвы, ставшее образцом для многих других храмов Золотого кольца. В стенах этого собора воплотилась история Русского государства. Храм Христа Спасителя – кафедральный собор, возведенный как памятник мужеству русского народа в Отечественной войне 1812 года. На стенах храма высечены имена павших офицеров. Первоначальное здание было варварски разрушено в советское время и воссоздано заново в конце XX века. Сегодня это главный собор Русской Православной церкви, символ новой России.";
+    document.getElementById("gold-modal-text").textContent = "Москва, являющаяся отправной точкой и культурным эпицентром всего маршрута, демонстрирует многовековое наследие российского государства — от монументальных стен Кремля и соборов Соборной площади до современных арт-кластеров, связывая прошлое с настоящим. В отличие от камерных городов Золотого кольца, столица поражает масштабом и разнообразием: всемирно известные музеи-заповедники Коломенское и Царицыно соседствуют с авангардными галереями, создавая многогранную палитру русской культуры. Здесь можно проследить всю историю отечественного зодчества: шедевры древнерусской архитектуры в районе Зарядье, великолепие сталинского ампира на высотках и новаторские проекты Москва-Сити, визуализирующие многовековое развитие страны.";
     document.getElementById("gold-modal").style.display = "block";
 }
 
