@@ -362,9 +362,101 @@ Object.assign(quizDatabase, {
 // ==========================================
 // ГЕЙМ ЧАСТЬ 4В: ЛОББИ И РЕНДЕР
 // ==========================================
+let wizardMode = null;
+let wizardBotAccuracy = 0.4;
+
+function resetWizard() {
+    wizardMode = null;
+    wizardBotAccuracy = 0.4;
+
+    document.querySelectorAll(".step-dot").forEach(d => d.classList.remove("filled", "active"));
+    document.querySelectorAll(".btn-mode").forEach(b => b.classList.remove("btn-mode-selected"));
+
+    const slider = document.getElementById("bot-difficulty-slider");
+    if (slider) { slider.value = 40; }
+
+    const dotStep1 = document.querySelector('.step-dot[data-step="1"]');
+    if (dotStep1) { dotStep1.classList.add("filled"); }
+
+    const startBtn = document.getElementById("wizard-start-button");
+    if (startBtn) { startBtn.style.display = "none"; }
+
+    goToStep(0);
+}
+
+function goToStep(stepIndex) {
+    document.querySelectorAll(".step-page").forEach(p => {
+        p.style.display = (Number(p.dataset.step) === stepIndex) ? "block" : "none";
+    });
+    document.querySelectorAll(".step-dot").forEach(d => {
+        d.classList.toggle("active", Number(d.dataset.step) === stepIndex);
+    });
+}
+
+function selectMode(totalPlayers, hasBots, btnEl) {
+    wizardMode = { totalPlayers: totalPlayers, hasBots: hasBots };
+
+    document.querySelectorAll(".btn-mode").forEach(b => b.classList.remove("btn-mode-selected"));
+    btnEl.classList.add("btn-mode-selected");
+
+    const dotStep0 = document.querySelector('.step-dot[data-step="0"]');
+    if (dotStep0) { dotStep0.classList.add("filled"); }
+
+    checkWizardComplete();
+    setTimeout(() => { goToStep(1); }, 300);
+}
+
+function updateBotDifficulty(value) {
+    wizardBotAccuracy = Number(value) / 100;
+    const dotStep1 = document.querySelector('.step-dot[data-step="1"]');
+    if (dotStep1) { dotStep1.classList.add("filled"); }
+    checkWizardComplete();
+}
+
+function checkWizardComplete() {
+    const totalDots = document.querySelectorAll(".step-dot").length;
+    const filledDots = document.querySelectorAll(".step-dot.filled").length;
+    const startBtn = document.getElementById("wizard-start-button");
+    if (startBtn) {
+        startBtn.style.display = (totalDots > 0 && filledDots === totalDots) ? "block" : "none";
+    }
+}
+
+function zoomOutThen(el, callback) {
+    el.classList.add("screen-zoom-out");
+    setTimeout(() => {
+        el.style.display = "none";
+        el.classList.remove("screen-zoom-out");
+        callback();
+    }, 350);
+}
+
+function zoomInReveal(el, displayValue) {
+    el.style.display = displayValue;
+    el.classList.add("screen-zoom-in");
+    setTimeout(() => { el.classList.remove("screen-zoom-in"); }, 350);
+}
+
 function openModeSelection() {
-    document.getElementById("welcome-screen").style.display = "none";
-    document.getElementById("start-screen").style.display = "block";
+    const fromEl = document.getElementById("welcome-screen");
+    const toEl = document.getElementById("start-screen");
+    zoomOutThen(fromEl, () => {
+        resetWizard();
+        zoomInReveal(toEl, "block");
+    });
+}
+
+function confirmStartGame() {
+    if (!wizardMode) return;
+    BOT_QUIZ_ACCURACY = wizardBotAccuracy;
+
+    const fromEl = document.getElementById("start-screen");
+    zoomOutThen(fromEl, () => {
+        startGame(wizardMode.totalPlayers, wizardMode.hasBots);
+        const toEl = document.getElementById("game-interface");
+        toEl.classList.add("screen-zoom-in");
+        setTimeout(() => { toEl.classList.remove("screen-zoom-in"); }, 350);
+    });
 }
 
 let preloadedVideos = [];
@@ -451,7 +543,6 @@ function drawGame() {
         }
     });
 }
-
 // ==========================================
 // ГЕЙМ ЧАСТЬ 5: ДВИЖЕНИЕ, ЗВУКИ И ИНТЕРФЕЙС КНОПОК
 // ==========================================
