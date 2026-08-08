@@ -731,9 +731,9 @@ function updateUI() {
     turnIndicator.style.color = activePlayer.color;
     
     if (!activePlayer.isBot && !isMoving) {
-        rollButton.disabled = false;
+        rollButton.classList.remove("btn-roll-inactive");
     } else {
-        rollButton.disabled = true;
+        rollButton.classList.add("btn-roll-inactive");
     }
 
     const listContainer = document.getElementById("bookmark-players-list");
@@ -764,6 +764,7 @@ function updateUI() {
 
 function playerTurn() {
     if (isMoving) return;
+    if (players[currentTurn].isBot) return;
     executeTurn();
 }
 
@@ -789,14 +790,22 @@ function executeTurn() {
         videoEl.src = "cubic_" + diceRoll + ".webm";
         videoEl.load();
         
-        videoEl.play().catch(err => {
-            console.warn("Видео заблокировано браузером, шагаем сразу:", err);
-            moveStepByStep(activePlayer, diceRoll, diceRoll, true);
-        });
-        
-        videoEl.onended = function() {
+        let hasAdvanced = false;
+        const proceedOnce = function() {
+            if (hasAdvanced) return;
+            hasAdvanced = true;
             moveStepByStep(activePlayer, diceRoll, diceRoll, true);
         };
+
+        videoEl.play().catch(err => {
+            console.warn("Видео заблокировано браузером, шагаем сразу:", err);
+            proceedOnce();
+        });
+        
+        videoEl.onended = proceedOnce;
+        // Защита от зависания хода, если видео кубика не смогло доиграть
+        // (например, из-за медленной загрузки карты/сети)
+        setTimeout(proceedOnce, 2500);
     } else {
         moveStepByStep(activePlayer, diceRoll, diceRoll, true);
     }
