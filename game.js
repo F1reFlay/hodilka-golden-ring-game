@@ -576,8 +576,23 @@ function openModeSelection() {
     });
 }
 
-function pickRandomBotNames(count) {
-    const shuffled = botNamePool.slice().sort(() => Math.random() - 0.5);
+function makeNameUnique(name, usedNamesLower) {
+    let candidate = name;
+    let suffix = 2;
+    while (usedNamesLower.has(candidate.toLowerCase())) {
+        candidate = name + " " + suffix;
+        suffix++;
+    }
+    usedNamesLower.add(candidate.toLowerCase());
+    return candidate;
+}
+
+function pickRandomBotNames(count, usedNamesLower) {
+    let pool = botNamePool.filter(n => !usedNamesLower.has(n.toLowerCase()));
+    if (pool.length < count) {
+        pool = botNamePool.slice();
+    }
+    const shuffled = pool.slice().sort(() => Math.random() - 0.5);
     const result = [];
     for (let i = 0; i < count; i++) {
         result.push(shuffled[i % shuffled.length]);
@@ -617,8 +632,18 @@ function startGame(totalPlayers, hasBots, customColors, customNames) {
         preloadedVideos.push(v);
     }
 
+    const humanCount = hasBots ? 1 : totalPlayers;
+    const usedNamesLower = new Set();
+    const finalHumanNames = [];
+    for (let h = 0; h < humanCount; h++) {
+        const typed = customNames && customNames[h] ? customNames[h] : "";
+        const baseName = typed || ("Игрок " + (h + 1));
+        finalHumanNames.push(makeNameUnique(baseName, usedNamesLower));
+    }
+
     const botCount = hasBots ? totalPlayers - 1 : 0;
-    const botNames = pickRandomBotNames(botCount);
+    const rawBotNames = pickRandomBotNames(botCount, usedNamesLower);
+    const finalBotNames = rawBotNames.map(n => makeNameUnique(n, usedNamesLower));
     
     players = [];
     let humanIndex = 0;
@@ -631,14 +656,13 @@ function startGame(totalPlayers, hasBots, customColors, customNames) {
         let name;
 
         if (isPlayerABot) {
-            name = botNames[botIndex] || ("Бот " + (botIndex + 1));
+            name = finalBotNames[botIndex];
             botIndex++;
         } else {
             if (customColors && customColors[humanIndex]) {
                 color = customColors[humanIndex];
             }
-            const typedName = customNames && customNames[humanIndex] ? customNames[humanIndex] : "";
-            name = typedName || ("Игрок " + (humanIndex + 1));
+            name = finalHumanNames[humanIndex];
             humanIndex++;
         }
         
