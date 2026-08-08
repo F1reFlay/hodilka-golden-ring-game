@@ -74,9 +74,6 @@ canvas { border: 4px solid #2e3440; background: #16181c; border-radius: 16px; bo
 .quiz-options-box { display: flex; flex-direction: column; gap: 10px; margin-top: 15px; }
 .btn-quiz-opt { padding: 14px; background: #232830; color: #ffffff; border: 1px solid #3b4252; border-radius: 12px; font-size: 14px; cursor: pointer; text-align: left; font-weight: bold; transition: all 0.2s ease; }
 .btn-quiz-opt:hover { background: #2e3440; border-color: #8b55ff; transform: translateX(3px); }
-.btn-hint-toggle { padding: 10px; background: #3b4252; color: #8be9fd; border: 1px solid #4c566a; border-radius: 12px; font-size: 13px; font-weight: bold; cursor: pointer; margin-top: 10px; margin-bottom: 5px; text-align: center; transition: all 0.2s ease; width: 100%; box-sizing: border-box; }
-.btn-hint-toggle:hover { background: #434c5e; border-color: #8be9fd; }
-.hint-text-block { display: none; background: #232830; border: 1px dashed #4c566a; padding: 12px; border-radius: 12px; font-size: 13px; line-height: 1.5; color: #cbd5e1; margin-top: 5px; margin-bottom: 10px; height: 130px; overflow-y: auto; }
 .modal-layout { display: none; position: fixed; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.6); z-index: 1000; }
 .modal-content-box { position: absolute; left: 0; top: 0; width: 380px; height: 100%; background: #1c1f26; box-shadow: 5px 0 30px rgba(0, 0, 0, 0.7); padding: 30px 20px; display: flex; flex-direction: column; animation: slideIn 0.3s ease; box-sizing: border-box; border-radius: 0 24px 24px 0 !important; }
 #rules-modal-content { border-right: 4px solid #8be9fd; }
@@ -105,6 +102,12 @@ canvas { border: 4px solid #2e3440; background: #16181c; border-radius: 16px; bo
 .btn-restart { padding: 16px 32px; font-size: 16px; background: #a482ff; color: #111213; border: none; border-radius: 20px !important; font-weight: bold; cursor: pointer; transition: all 0.2s ease; width: 100%; box-shadow: 0 4px 12px rgba(164,130,255,0.3); margin-top: 15px; }
 .btn-restart:hover { background: #8c66ff; transform: translateY(-2px); box-shadow: 0 6px 20px rgba(164,130,255,0.4); }
 .btn-restart:active { transform: translateY(0) scale(0.98); }
+#hint-bookmark-tab { display: none; align-items: center; justify-content: center; position: fixed; top: 50%; right: 0; transform: translateY(-50%); z-index: 1100; width: 44px; height: 90px; background: #f1c40f; color: #111213; border: none; border-radius: 12px 0 0 12px !important; font-size: 22px; cursor: pointer; box-shadow: -4px 4px 15px rgba(0,0,0,0.4); writing-mode: vertical-rl; transition: all 0.2s ease; }
+#hint-bookmark-tab:hover { background: #d4ac0d; width: 50px; }
+#hint-bookmark-panel { position: fixed; top: 0; right: 0; transform: translateX(100%); width: 380px; height: 100%; background: #1c1f26; border-left: 4px solid #f1c40f; box-shadow: -5px 0 30px rgba(0,0,0,0.7); padding: 30px 20px; box-sizing: border-box; z-index: 1200; display: flex; flex-direction: column; transition: transform 0.35s ease; }
+#hint-bookmark-panel.open { transform: translateX(0); }
+.btn-close-bookmark { background: #f1c40f; box-shadow: 0 4px 12px rgba(241,196,15,0.3); }
+.btn-close-bookmark:hover { background: #d4ac0d; }
 @media (max-width: 1024px) {
 #game-interface { flex-direction: column; align-items: center; }
 canvas { max-width: 100%; width: 100% !important; height: auto !important; }
@@ -118,8 +121,10 @@ canvas { max-width: 100%; width: 100% !important; height: auto !important; }
 @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
 #win-modal-content { width: 95%; padding: 25px 20px; }
 .winner-badge { padding: 15px 30px; font-size: 20px; }
+#hint-bookmark-panel { width: 90%; max-width: 380px; }
+#hint-bookmark-tab { width: 38px; height: 76px; font-size: 18px; }
 }
-
+  
 <!-- ========================================== -->
 <!-- ИНДЕКС ЧАСТЬ 3: HTML СТРУКТУРА ПРИЛОЖЕНИЯ  -->
 <!-- ========================================== -->
@@ -204,6 +209,12 @@ body { padding: 15px; }
 </div>
 </div>
 </div>
+<button id="hint-bookmark-tab" onclick="toggleHintBookmark()">📖 О городе</button>
+<div id="hint-bookmark-panel">
+<div class="modal-header-text gold-color-header">📖 О ГОРОДЕ</div>
+<div id="hint-bookmark-text" class="modal-scroll-text">Текст...</div>
+<button class="btn-close-modal btn-close-bookmark" onclick="closeHintBookmark()">Закрыть</button>
+</div>
 <div id="gold-modal" class="modal-layout">
 <div id="gold-modal-content" class="modal-content-box">
 <div class="modal-header-text gold-color-header">✨ ИСТОРИЯ ГОРОДА ✨</div>
@@ -215,8 +226,6 @@ body { padding: 15px; }
 <div id="quiz-modal-content" class="modal-content-box">
 <div class="modal-header-text quiz-color-header" style="color: #50fa7b;">🧠 ВОПРОС НА БАЛЛЫ</div>
 <div id="quiz-modal-question" class="modal-scroll-text" style="font-weight: bold; margin-bottom: 5px; flex-grow: 0; min-height: auto;">Вопрос...</div>
-<button id="hint-toggle-button" class="btn-hint-toggle" onclick="toggleQuizHint()">Посмотреть историческую справку города 📜</button>
-<div id="quiz-modal-hint-text" class="hint-text-block">Подсказка...</div>
 <div id="quiz-options-container" class="quiz-options-box"></div>
 </div>
 </div>
