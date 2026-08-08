@@ -45,7 +45,7 @@ let isExtraTurnEarned = false;
 
 const playerColors = ["#a482ff", "#50fa7b", "#ffb86c", "#8be9fd"];
 
-const gameRulesText = "ПРАВИЛА ИГРЫ-ПУТЕШЕСТВИЯ «Золотое кольцо России»\n\n1. Подготовка к игре:\n• Все фишки игроков устанавливаются на стартовое поле «Москва».\n• Каждый участник выбирает фишку своего цвета.\n• Определяется очерёдность ходов.\n\n2. Ход игры:\n• Игроки по очереди бросают игральный кубик.\n• Фишка передвигается по круглым «шагам» на столько клеток, какое число выпало на верхней грани кубика.\n• Движение осуществляется строго вперёд по маршруту. Обратный ход категоричен запрещён.\n\n3. Особые клетки поля:\n• Оранжевые «шаги» (Золотые города) – при попадании на такую клетку игрок получает право на один дополнительный (бонусный) ход.\n• Клетки со стрелками – указывают обязательное направление движения при следующем ходе игрока.\n• Болото (зелёная трясина) – игрок, попавший на эту клетку, застревает в ней и полностью пропускает свой следующий ход.\n\n4. Викторина и баллы:\n• При попадании на клетки городов открывается окно с вопросом по истории или культуре данного места.\n• За каждый правильный ответ игроку начисляется +10 баллов в путевой лист.\n• Если игрок отвечает неверно, баллы не начисляются, но фишка остаётся на месте.\n• Дополнительные баллы можно получить за посещение скрытых или редких исторических локаций.\n\n5. Условия победы:\n• Путешествие завершается, когда первый из игроков достигает финишной черты на противоположной стороне игрового поля «Москва».\n• За успешное достижение финиша игроку начисляется крупный финальный бонус в размере +50 баллов.\n• Победителем объявляется не тот, кто пришёл первым, а тот, кто набрал наибольшее суммарное количество баллов в путевой листе за всё путешествие.";
+const gameRulesText = "ПРАВИЛА\nИгры-Путешествия «Золотое кольцо России»\n\n• Поставьте все фишки игроков на поле «Москва».\n• Бросайте кубик и передвигайте фишки по «шагам»-кружочкам столько, какое число выпало на кубике сверху.\n• В случае попадания фишки на «стрелку», в следующий ход двигайте фишку по указанному направлению.\n• Если фишка оказалась в «болоте», игрок пропускает ход.\n• Если фишка попала на оранжевые «шаги»-кружочки, игрок получает дополнительный ход.\n• Обратный ход запрещён.\n• При продвижении по игровому полю, отвечайте на всплывающие вопросы. Если затрудняетесь ответить, обратитесь к подсказке-информации. За правильный ответ даётся 10 очков, за неправильный – 0.\n• Игроку, первому достигшему финиша (обратной стороны «Москвы»), начисляются бонусные 100 очков.\n• Побеждает тот, кто получит больше всех очков!\n\nПриятной игры!";
 
 function openRulesModal() {
     document.getElementById("rules-modal-text").textContent = gameRulesText;
@@ -364,19 +364,22 @@ Object.assign(quizDatabase, {
 // ==========================================
 let wizardMode = null;
 let wizardBotAccuracy = 0.4;
+let wizardColors = [];
 
 function resetWizard() {
     wizardMode = null;
     wizardBotAccuracy = 0.4;
+    wizardColors = [];
 
-    document.querySelectorAll(".step-dot").forEach(d => d.classList.remove("filled", "active"));
     document.querySelectorAll(".btn-mode").forEach(b => b.classList.remove("btn-mode-selected"));
 
-    const slider = document.getElementById("bot-difficulty-slider");
-    if (slider) { slider.value = 40; }
+    const dotsContainer = document.getElementById("step-dots");
+    dotsContainer.querySelectorAll('.step-dot:not([data-step="0"])').forEach(d => d.remove());
+    const dot0 = dotsContainer.querySelector('.step-dot[data-step="0"]');
+    if (dot0) { dot0.classList.remove("filled", "active"); }
 
-    const dotStep1 = document.querySelector('.step-dot[data-step="1"]');
-    if (dotStep1) { dotStep1.classList.add("filled"); }
+    const pagesContainer = document.getElementById("step-pages");
+    pagesContainer.querySelectorAll('.step-page:not([data-step="0"])').forEach(p => p.remove());
 
     const startBtn = document.getElementById("wizard-start-button");
     if (startBtn) { startBtn.style.display = "none"; }
@@ -393,6 +396,94 @@ function goToStep(stepIndex) {
     });
 }
 
+function addStepDot(stepIndex) {
+    const dot = document.createElement("button");
+    dot.className = "step-dot";
+    dot.dataset.step = stepIndex;
+    dot.onclick = function() { goToStep(stepIndex); };
+    document.getElementById("step-dots").appendChild(dot);
+    return dot;
+}
+
+function hueToHex(hue) {
+    const h = Number(hue) / 360;
+    const s = 0.75;
+    const l = 0.62;
+    function hue2rgb(p, q, t) {
+        if (t < 0) t += 1;
+        if (t > 1) t -= 1;
+        if (t < 1 / 6) return p + (q - p) * 6 * t;
+        if (t < 1 / 2) return q;
+        if (t < 2 / 3) return p + (q - p) * (2 / 3 - t) * 6;
+        return p;
+    }
+    let r, g, b;
+    const q = l < 0.5 ? l * (1 + s) : l + s - l * s;
+    const p = 2 * l - q;
+    r = hue2rgb(p, q, h + 1 / 3);
+    g = hue2rgb(p, q, h);
+    b = hue2rgb(p, q, h - 1 / 3);
+    function toHex(x) {
+        const v = Math.round(x * 255).toString(16);
+        return v.length === 1 ? "0" + v : v;
+    }
+    return "#" + toHex(r) + toHex(g) + toHex(b);
+}
+
+const defaultWizardHues = [255, 135, 30, 190];
+
+function buildDynamicSteps() {
+    let stepIndex = 1;
+    wizardColors = [];
+
+    if (wizardMode.hasBots) {
+        const dot = addStepDot(stepIndex);
+        dot.classList.add("filled");
+
+        const page = document.createElement("div");
+        page.className = "step-page";
+        page.dataset.step = stepIndex;
+        page.innerHTML =
+            '<h1 class="menu-main-title">Сложность ботов</h1>' +
+            '<h2 class="menu-sub-title">Чем правее ползунок — тем чаще боты отвечают правильно на вопросы викторины</h2>' +
+            '<div class="difficulty-slider-box">' +
+            '<span class="difficulty-label">Лёгкий</span>' +
+            '<input type="range" class="wizard-difficulty-slider" min="0" max="100" value="40" oninput="updateBotDifficulty(this.value)">' +
+            '<span class="difficulty-label">Сложный</span>' +
+            '</div>';
+        document.getElementById("step-pages").appendChild(page);
+        stepIndex++;
+    }
+
+    const humanCount = wizardMode.hasBots ? 1 : wizardMode.totalPlayers;
+
+    for (let i = 0; i < humanCount; i++) {
+        const dot = addStepDot(stepIndex);
+        dot.classList.add("filled");
+
+        const defaultHue = defaultWizardHues[i % defaultWizardHues.length];
+        const defaultHex = hueToHex(defaultHue);
+        wizardColors.push(defaultHex);
+
+        const label = humanCount > 1 ? ("Цвет фишки: Игрок " + (i + 1)) : "Цвет вашей фишки";
+
+        const page = document.createElement("div");
+        page.className = "step-page";
+        page.dataset.step = stepIndex;
+        page.innerHTML =
+            '<h1 class="menu-main-title">' + label + '</h1>' +
+            '<h2 class="menu-sub-title">Подвиньте ползунок, чтобы выбрать любой цвет фишки</h2>' +
+            '<div class="color-slider-box">' +
+            '<div class="color-preview-swatch" id="color-preview-' + i + '" style="background:' + defaultHex + '"></div>' +
+            '<input type="range" class="wizard-color-slider" min="0" max="360" value="' + defaultHue + '" oninput="updatePlayerColor(' + i + ', this.value)">' +
+            '</div>';
+        document.getElementById("step-pages").appendChild(page);
+        stepIndex++;
+    }
+
+    checkWizardComplete();
+}
+
 function selectMode(totalPlayers, hasBots, btnEl) {
     wizardMode = { totalPlayers: totalPlayers, hasBots: hasBots };
 
@@ -402,15 +493,19 @@ function selectMode(totalPlayers, hasBots, btnEl) {
     const dotStep0 = document.querySelector('.step-dot[data-step="0"]');
     if (dotStep0) { dotStep0.classList.add("filled"); }
 
-    checkWizardComplete();
+    buildDynamicSteps();
     setTimeout(() => { goToStep(1); }, 300);
 }
 
 function updateBotDifficulty(value) {
     wizardBotAccuracy = Number(value) / 100;
-    const dotStep1 = document.querySelector('.step-dot[data-step="1"]');
-    if (dotStep1) { dotStep1.classList.add("filled"); }
-    checkWizardComplete();
+}
+
+function updatePlayerColor(playerIndex, hueValue) {
+    const hex = hueToHex(hueValue);
+    wizardColors[playerIndex] = hex;
+    const swatch = document.getElementById("color-preview-" + playerIndex);
+    if (swatch) { swatch.style.background = hex; }
 }
 
 function checkWizardComplete() {
@@ -431,28 +526,26 @@ function zoomOutThen(el, callback) {
     }, 350);
 }
 
-function zoomInReveal(el, displayValue) {
-    el.style.display = displayValue;
-    el.classList.add("screen-zoom-in");
-    setTimeout(() => { el.classList.remove("screen-zoom-in"); }, 350);
-}
-
 function openModeSelection() {
     const fromEl = document.getElementById("welcome-screen");
     const toEl = document.getElementById("start-screen");
     zoomOutThen(fromEl, () => {
         resetWizard();
-        zoomInReveal(toEl, "block");
+        toEl.style.display = "block";
+        toEl.classList.add("screen-zoom-in");
+        setTimeout(() => { toEl.classList.remove("screen-zoom-in"); }, 350);
     });
 }
 
 function confirmStartGame() {
     if (!wizardMode) return;
-    BOT_QUIZ_ACCURACY = wizardBotAccuracy;
+    if (wizardMode.hasBots) {
+        BOT_QUIZ_ACCURACY = wizardBotAccuracy;
+    }
 
     const fromEl = document.getElementById("start-screen");
     zoomOutThen(fromEl, () => {
-        startGame(wizardMode.totalPlayers, wizardMode.hasBots);
+        startGame(wizardMode.totalPlayers, wizardMode.hasBots, wizardColors);
         const toEl = document.getElementById("game-interface");
         toEl.classList.add("screen-zoom-in");
         setTimeout(() => { toEl.classList.remove("screen-zoom-in"); }, 350);
@@ -461,7 +554,7 @@ function confirmStartGame() {
 
 let preloadedVideos = [];
 
-function startGame(totalPlayers, hasBots) {
+function startGame(totalPlayers, hasBots, customColors) {
     document.getElementById("start-screen").style.display = "none";
     document.getElementById("game-interface").style.display = "flex";
     
@@ -477,16 +570,23 @@ function startGame(totalPlayers, hasBots) {
     }
     
     players = [];
+    let humanIndex = 0;
     for (let i = 0; i < totalPlayers; i++) {
         let isPlayerABot = false;
         if (hasBots && i !== 0) { isPlayerABot = true; }
+
+        let color = playerColors[i];
+        if (!isPlayerABot && customColors && customColors[humanIndex]) {
+            color = customColors[humanIndex];
+            humanIndex++;
+        }
         
         players.push({
             id: i,
             name: isPlayerABot ? "Бот " + i : "Игрок " + (i + 1),
             isBot: isPlayerABot,
             currentCell: "5",
-            color: playerColors[i],
+            color: color,
             skipNextTurn: false,
             isJustGotBonus: false,
             score: 0,
@@ -546,7 +646,7 @@ function drawGame() {
 // ==========================================
 // ГЕЙМ ЧАСТЬ 5: ДВИЖЕНИЕ, ЗВУКИ И ИНТЕРФЕЙС КНОПОК
 // ==========================================
-const BOT_QUIZ_ACCURACY = 0.4;
+let BOT_QUIZ_ACCURACY = 0.4;
 
 function updateUI() {
     const activePlayer = players[currentTurn];
@@ -638,7 +738,7 @@ function moveStepByStep(player, stepsLeft, totalRoll, isFirstStep) {
     const nextCellId = getNextCellId(player.currentCell, goesFork);
     
     if (nextCellId === null) {
-        player.score += 50;
+        player.score += 100;
         soundWin.play();
         showWinModal();
         return;
