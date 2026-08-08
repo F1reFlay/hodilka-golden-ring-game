@@ -21,6 +21,7 @@ h2.menu-sub-title { margin-top: 15px; color: #cbd5e1; font-size: 16px; font-weig
 .btn-mode { padding: 12px 24px; font-size: 15px; margin: 6px; cursor: pointer; background: #232830; color: #fff; border: 2px solid #3b4252; border-radius: 20px !important; font-weight: bold; transition: all 0.2s ease; }
 .btn-mode:hover { border-color: #a482ff; background: #1c1f26; transform: translateY(-2px); box-shadow: 0 6px 15px rgba(164,130,255,0.2); }
 .btn-mode:active { transform: translateY(-1px) scale(0.97); }
+.btn-mode-selected { border-color: #50fa7b !important; background: #1c1f26 !important; box-shadow: 0 0 15px rgba(80,250,123,0.35) !important; }
 .btn-rules { background: #8be9fd; color: #111213; border: none; padding: 14px 30px; font-size: 16px; margin-top: 10px; }
 .btn-rules:hover { background: #72cbdc; border-color: transparent; box-shadow: 0 6px 15px rgba(139,233,253,0.3); }
 .btn-start-game { background: #50fa7b; color: #111213; border: none; padding: 16px 40px; font-size: 18px; margin-top: 10px; }
@@ -28,7 +29,23 @@ h2.menu-sub-title { margin-top: 15px; color: #cbd5e1; font-size: 16px; font-weig
 #game-interface { display: none; gap: 25px; margin-top: 20px; flex-direction: row; align-items: flex-start; position: relative; }
 canvas { border: 4px solid #2e3440; background: #16181c; border-radius: 16px; box-shadow: 0 10px 25px rgba(0,0,0,0.5); display: block; }
 #side-panel { width: 280px; background: #16181c; border: 1px solid #2e3440; border-radius: 16px; padding: 20px; display: flex; flex-direction: column; gap: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.5); box-sizing: border-box; }
-
+.step-dots { display: flex; justify-content: center; gap: 12px; margin-bottom: 20px; }
+.step-dot { width: 14px; height: 14px; border-radius: 50%; border: 2px solid #3b4252; background: #232830; padding: 0; cursor: pointer; transition: all 0.25s ease; }
+.step-dot.active { border-color: #a482ff; transform: scale(1.25); }
+.step-dot.filled { background: #50fa7b; border-color: #50fa7b; box-shadow: 0 0 10px rgba(80,250,123,0.5); }
+.step-dot.filled.active { border-color: #a482ff; }
+.step-pages { position: relative; }
+.step-page { display: none; }
+.difficulty-slider-box { display: flex; align-items: center; gap: 14px; margin: 25px 0 10px; }
+.difficulty-label { font-size: 12px; font-weight: bold; color: #cbd5e1; text-transform: uppercase; letter-spacing: 1px; white-space: nowrap; }
+#bot-difficulty-slider { flex-grow: 1; -webkit-appearance: none; appearance: none; height: 8px; border-radius: 6px; background: linear-gradient(90deg, #8be9fd, #f1c40f, #ff5555); outline: none; cursor: pointer; }
+#bot-difficulty-slider::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 24px; height: 24px; border-radius: 50%; background: #a482ff; border: 3px solid #f1f2f3; box-shadow: 0 2px 8px rgba(0,0,0,0.5); cursor: pointer; }
+#bot-difficulty-slider::-moz-range-thumb { width: 24px; height: 24px; border-radius: 50%; background: #a482ff; border: 3px solid #f1f2f3; box-shadow: 0 2px 8px rgba(0,0,0,0.5); cursor: pointer; border: none; }
+@keyframes screenZoomOut { from { transform: scale(1); opacity: 1; } to { transform: scale(0.85); opacity: 0; } }
+@keyframes screenZoomIn { from { transform: scale(1.12); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+.screen-zoom-out { animation: screenZoomOut 0.35s ease forwards; }
+.screen-zoom-in { animation: screenZoomIn 0.35s ease forwards; }
+  
 <!-- ========================================== -->
 <!-- ИНДЕКС ЧАСТЬ 2: ТАЙМИНГИ И ОКНА ВИКТОРИНЫ  -->
 <!-- ========================================== -->
@@ -115,6 +132,9 @@ body { padding: 15px; }
 #turn-indicator { font-size: 14px; padding: 8px; border-radius: 12px !important; }
 #dice-zone { font-size: 36px; padding: 10px; min-height: 140px; border-radius: 16px !important; }
 #win-modal-content { width: 90%; }
+.step-dots { gap: 8px; margin-bottom: 14px; }
+.difficulty-slider-box { gap: 8px; }
+.difficulty-label { font-size: 10px; }
 }
 </style>
 </head>
@@ -134,18 +154,38 @@ body { padding: 15px; }
 </div>
 </div>
 <div id="start-screen">
+<div class="step-dots" id="step-dots">
+<button class="step-dot" data-step="0" onclick="goToStep(0)"></button>
+<button class="step-dot" data-step="1" onclick="goToStep(1)"></button>
+</div>
+<div class="step-pages" id="step-pages">
+<div class="step-page" data-step="0">
 <h1 class="menu-main-title">Выбор режима</h1>
 <div class="mode-section">
 <h2>🤖 Одиночная игра (против ботов):</h2>
-<button class="btn-mode" onclick="startGame(2, true)">Вы + 1 Бот</button>
-<button class="btn-mode" onclick="startGame(3, true)">Вы + 2 Бота</button>
-<button class="btn-mode" onclick="startGame(4, true)">Вы + 3 Бота</button>
+<button class="btn-mode" onclick="selectMode(2, true, this)">Вы + 1 Бот</button>
+<button class="btn-mode" onclick="selectMode(3, true, this)">Вы + 2 Бота</button>
+<button class="btn-mode" onclick="selectMode(4, true, this)">Вы + 3 Бота</button>
 </div>
 <div class="mode-section">
 <h2>👥 Мультиплеер (на одном экране):</h2>
-<button class="btn-mode" onclick="startGame(2, false)">2 Игрока</button>
-<button class="btn-mode" onclick="startGame(3, false)">3 Игрока</button>
-<button class="btn-mode" onclick="startGame(4, false)">4 Игрока</button>
+<button class="btn-mode" onclick="selectMode(2, false, this)">2 Игрока</button>
+<button class="btn-mode" onclick="selectMode(3, false, this)">3 Игрока</button>
+<button class="btn-mode" onclick="selectMode(4, false, this)">4 Игрока</button>
+</div>
+</div>
+<div class="step-page" data-step="1">
+<h1 class="menu-main-title">Сложность ботов</h1>
+<h2 class="menu-sub-title">Чем правее ползунок — тем чаще боты отвечают правильно на вопросы викторины</h2>
+<div class="difficulty-slider-box">
+<span class="difficulty-label">Лёгкий</span>
+<input type="range" id="bot-difficulty-slider" min="0" max="100" value="40" oninput="updateBotDifficulty(this.value)">
+<span class="difficulty-label">Сложный</span>
+</div>
+</div>
+</div>
+<div class="mode-section" style="margin-top: 20px;">
+<button id="wizard-start-button" class="btn-mode btn-start-game" style="display:none;" onclick="confirmStartGame()">Начать 🚀</button>
 </div>
 <div class="mode-section">
 <button class="btn-mode btn-rules" onclick="openRulesModal()">📜 Правила игры</button>
