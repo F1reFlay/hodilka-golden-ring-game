@@ -455,6 +455,8 @@ function drawGame() {
 // ==========================================
 // ГЕЙМ ЧАСТЬ 5: ДВИЖЕНИЕ, ЗВУКИ И ИНТЕРФЕЙС КНОПОК
 // ==========================================
+const BOT_QUIZ_ACCURACY = 0.4;
+
 function updateUI() {
     const activePlayer = players[currentTurn];
     const turnIndicator = document.getElementById("turn-indicator");
@@ -703,8 +705,8 @@ function launchQuiz(player) {
         });
         document.getElementById("quiz-modal").style.display = "block";
     } else {
-        const botGuess = Math.random() > 0.5 ? qData.right : -1;
-        if (botGuess === qData.right) {
+        const botAnswersCorrectly = Math.random() < BOT_QUIZ_ACCURACY;
+        if (botAnswersCorrectly) {
             player.score += 10;
         }
         finishCellEffect();
