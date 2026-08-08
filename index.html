@@ -60,10 +60,10 @@ canvas { border: 4px solid #2e3440; background: #16181c; border-radius: 16px; bo
 <!-- ========================================== -->
 <!-- ИНДЕКС ЧАСТЬ 2: ТАЙМИНГИ И ОКНА ВИКТОРИНЫ  -->
 <!-- ========================================== -->
-.btn-roll { height: 90px; font-size: 22px; cursor: pointer; background: #50fa7b; border: none; color: #111213; border-radius: 24px !important; font-weight: bold; width: 100%; -webkit-appearance: none !important; -moz-appearance: none !important; appearance: none !important; transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1); display: flex; align-items: center; justify-content: center; box-sizing: border-box; text-shadow: 0 0 8px rgba(80,250,123,0.8); box-shadow: 0 0 20px rgba(80,250,123,0.3); }
-.btn-roll:hover:not(:disabled) { background: #40c762; transform: translateY(-3px); box-shadow: 0 8px 30px rgba(80,250,123,0.6); }
-.btn-roll:active:not(:disabled) { transform: translateY(-1px) scale(0.97); }
-.btn-roll:disabled { background: #ff5555 !important; border: none !important; color: #ffffff !important; cursor: not-allowed; transform: none; border-radius: 24px !important; -webkit-appearance: none !important; -moz-appearance: none !important; appearance: none !important; text-shadow: 0 0 8px rgba(255,85,85,0.8) !important; box-shadow: 0 0 20px rgba(255,85,85,0.2) !important; }
+.btn-roll { all: unset; box-sizing: border-box; display: flex; align-items: center; justify-content: center; width: 100%; height: 105px; cursor: pointer; font-size: 23px; font-weight: bold; font-family: inherit; text-align: center; background: #50fa7b; color: #0f5132; border-radius: 24px; box-shadow: 0 0 12px 5px rgba(80,250,123,0.5), 0 0 40px rgba(80,250,123,0.3); transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1); }
+.btn-roll:hover:not(:disabled) { background: #40c762; transform: translateY(-3px) scale(1.04); box-shadow: 0 0 16px 7px rgba(80,250,123,0.65), 0 10px 32px rgba(80,250,123,0.55); }
+.btn-roll:active:not(:disabled) { transform: translateY(-1px) scale(0.98); }
+.btn-roll:disabled { background: #ff5555; color: #7a1212; cursor: not-allowed; transform: none; box-shadow: 0 0 12px 5px rgba(255,85,85,0.45), 0 0 35px rgba(255,85,85,0.25); }
 #turn-indicator { font-size: 18px; font-weight: bold; color: #8be9fd; text-align: center; padding: 12px; background: #232830; border-radius: 12px; border: 1px solid #3b4252; }
 #dice-zone { display: flex; justify-content: center; align-items: center; min-height: 180px; background: #232830; border-radius: 16px; padding: 10px; border: 1px solid #3b4252; overflow: hidden; }
 #dice-video { width: 100%; height: auto; display: block; max-height: 170px; object-fit: contain; mix-blend-mode: screen; }
@@ -108,8 +108,10 @@ canvas { border: 4px solid #2e3440; background: #16181c; border-radius: 16px; bo
 .btn-restart { padding: 16px 32px; font-size: 16px; background: #a482ff; color: #111213; border: none; border-radius: 20px !important; font-weight: bold; cursor: pointer; transition: all 0.2s ease; width: 100%; box-shadow: 0 4px 12px rgba(164,130,255,0.3); margin-top: 15px; }
 .btn-restart:hover { background: #8c66ff; transform: translateY(-2px); box-shadow: 0 6px 20px rgba(164,130,255,0.4); }
 .btn-restart:active { transform: translateY(0) scale(0.98); }
-#hint-bookmark-tab { display: none; align-items: center; justify-content: center; position: fixed; top: 50%; right: 0; transform: translateY(-50%); z-index: 1100; width: 44px; height: 90px; background: #f1c40f; color: #111213; border: none; border-radius: 12px 0 0 12px !important; font-size: 22px; cursor: pointer; box-shadow: -4px 4px 15px rgba(0,0,0,0.4); writing-mode: vertical-rl; transition: all 0.2s ease; }
-#hint-bookmark-tab:hover { background: #d4ac0d; width: 50px; }
+#hint-bookmark-tab { display: none; align-items: center; justify-content: center; position: fixed; top: 50%; right: 0; transform: translateY(-50%); z-index: 1100; width: 52px; height: 64px; background: #f1c40f; color: #111213; border: none; border-radius: 14px 0 0 14px !important; font-size: 26px; cursor: pointer; box-shadow: -4px 4px 15px rgba(0,0,0,0.4); transition: all 0.2s ease; }
+#hint-bookmark-tab:hover { background: #d4ac0d; width: 58px; }
+.hint-tab-tooltip { position: absolute; right: 100%; top: 50%; transform: translateY(-50%) translateX(6px); margin-right: 4px; background: #1c1f26; color: #f1f2f3; font-size: 13px; font-weight: bold; padding: 8px 14px; border-radius: 10px; white-space: nowrap; box-shadow: 0 4px 15px rgba(0,0,0,0.5); border: 1px solid #3b4252; opacity: 0; pointer-events: none; transition: all 0.2s ease; }
+#hint-bookmark-tab:hover .hint-tab-tooltip { opacity: 1; transform: translateY(-50%) translateX(0); }
 #hint-bookmark-panel { position: fixed; top: 0; right: 0; transform: translateX(100%); width: 380px; height: 100%; background: #1c1f26; border-left: 4px solid #f1c40f; box-shadow: -5px 0 30px rgba(0,0,0,0.7); padding: 30px 20px; box-sizing: border-box; z-index: 1200; display: flex; flex-direction: column; transition: transform 0.35s ease; }
 #hint-bookmark-panel.open { transform: translateX(0); }
 .btn-close-bookmark { background: #f1c40f; box-shadow: 0 4px 12px rgba(241,196,15,0.3); }
@@ -128,7 +130,7 @@ canvas { max-width: 100%; width: 100% !important; height: auto !important; }
 #win-modal-content { width: 95%; padding: 25px 20px; }
 .winner-badge { padding: 15px 30px; font-size: 20px; }
 #hint-bookmark-panel { width: 90%; max-width: 380px; }
-#hint-bookmark-tab { width: 38px; height: 76px; font-size: 18px; }
+#hint-bookmark-tab { width: 44px; height: 54px; font-size: 20px; }
 }
   
 <!-- ========================================== -->
@@ -143,8 +145,8 @@ body { padding: 15px; }
 #welcome-screen h2, #start-screen h2 { font-size: 14px; }
 .btn-mode { padding: 12px 20px; font-size: 14px; margin: 5px; width: calc(100% - 10px); border-radius: 20px !important; }
 #side-panel { padding: 12px; gap: 12px; border-radius: 16px !important; }
-.btn-roll { height: 60px !important; font-size: 16px; border-radius: 20px !important; -webkit-appearance: none !important; appearance: none !important; }
-.btn-roll:disabled { border-radius: 20px !important; -webkit-appearance: none !important; appearance: none !important; }
+.btn-roll { height: 74px !important; font-size: 18px; border-radius: 20px !important; -webkit-appearance: none !important; appearance: none !important; -webkit-tap-highlight-color: transparent; background-clip: padding-box; }
+.btn-roll:disabled { border-radius: 20px !important; -webkit-appearance: none !important; appearance: none !important; background-clip: padding-box; }
 #turn-indicator { font-size: 14px; padding: 8px; border-radius: 12px !important; }
 #dice-zone { font-size: 36px; padding: 10px; min-height: 140px; border-radius: 16px !important; }
 #win-modal-content { width: 90%; }
@@ -193,7 +195,7 @@ body { padding: 15px; }
 </div>
 </div>
 <div class="mode-section" style="margin-top: 20px;">
-<button id="wizard-start-button" class="btn-mode btn-start-game" style="display:none;" onclick="confirmStartGame()">Начать 🚀</button>
+<button id="wizard-start-button" class="btn-mode btn-start-game" style="display:none;">Начать 🚀</button>
 </div>
 <div class="mode-section">
 <button class="btn-mode btn-rules" onclick="openRulesModal()">📜 Правила игры</button>
@@ -215,7 +217,7 @@ body { padding: 15px; }
 </div>
 </div>
 </div>
-<button id="hint-bookmark-tab" onclick="toggleHintBookmark()">📖 О городе</button>
+<button id="hint-bookmark-tab" onclick="toggleHintBookmark()">📖<span class="hint-tab-tooltip">Подсказка о городе</span></button>
 <div id="hint-bookmark-panel">
 <div class="modal-header-text gold-color-header">📖 О ГОРОДЕ</div>
 <div id="hint-bookmark-text" class="modal-scroll-text">Текст...</div>
