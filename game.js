@@ -1026,9 +1026,11 @@ function nextTurn() {
 }
 
 // ==========================================
-// ГЕЙМ ЧАСТЬ 6: ТЕМА, ЭНЕРГОСБЕРЕЖЕНИЕ И ПАНЕЛЬ НАСТРОЕК
+// ГЕЙМ ЧАСТЬ 6: ТЕМА, ЗВУК, ЭНЕРГОСБЕРЕЖЕНИЕ И ПАНЕЛЬ НАСТРОЕК
 // ==========================================
 let energySavingMode = false;
+let soundEnabled = true;
+let soundVolume = 0.7;
 
 function applyPress(el, scale) {
     if (energySavingMode) return;
@@ -1083,7 +1085,36 @@ function toggleEnergySaving() {
     syncEnergyToggleUI();
 }
 
-function initTheme() {
+function applySoundSettings() {
+    [soundStep, soundGold, soundWin].forEach(function(a) {
+        a.muted = !soundEnabled;
+        a.volume = soundVolume;
+    });
+}
+
+function syncSoundToggleUI() {
+    const input = document.getElementById("sound-toggle-input");
+    if (input) { input.checked = soundEnabled; }
+    const row = document.getElementById("sound-volume-row");
+    if (row) { row.style.display = soundEnabled ? "flex" : "none"; }
+    const slider = document.getElementById("sound-volume-slider");
+    if (slider) { slider.value = Math.round(soundVolume * 100); }
+}
+
+function toggleSound() {
+    soundEnabled = !soundEnabled;
+    try { localStorage.setItem("goldenRingSoundEnabled", soundEnabled ? "1" : "0"); } catch (e) {}
+    applySoundSettings();
+    syncSoundToggleUI();
+}
+
+function setSoundVolume(value) {
+    soundVolume = Number(value) / 100;
+    try { localStorage.setItem("goldenRingSoundVolume", String(soundVolume)); } catch (e) {}
+    applySoundSettings();
+}
+
+function initSettings() {
     let savedTheme = null;
     try { savedTheme = localStorage.getItem("goldenRingTheme"); } catch (e) {}
     if (savedTheme === "light") { document.body.classList.add("light-theme"); }
@@ -1095,8 +1126,21 @@ function initTheme() {
         document.body.classList.add("energy-saving");
     }
 
+    let savedSoundEnabled = null;
+    try { savedSoundEnabled = localStorage.getItem("goldenRingSoundEnabled"); } catch (e) {}
+    if (savedSoundEnabled === "0") { soundEnabled = false; }
+
+    let savedSoundVolume = null;
+    try { savedSoundVolume = localStorage.getItem("goldenRingSoundVolume"); } catch (e) {}
+    if (savedSoundVolume !== null) {
+        const parsed = parseFloat(savedSoundVolume);
+        if (!isNaN(parsed)) { soundVolume = parsed; }
+    }
+
+    applySoundSettings();
     syncThemeToggleUI();
     syncEnergyToggleUI();
+    syncSoundToggleUI();
 }
 
 document.addEventListener("keydown", function(e) {
@@ -1110,4 +1154,4 @@ document.addEventListener("keydown", function(e) {
     }
 });
 
-initTheme();
+initSettings();
