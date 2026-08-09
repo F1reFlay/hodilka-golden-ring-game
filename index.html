@@ -178,10 +178,40 @@ body.light-theme .step-dot { background: #eef0f3; border-color: #d0d5dd; }
 body.light-theme .btn-quiz-opt { background: #eef0f3; color: #16181c; border-color: #d0d5dd; }
 body.light-theme .btn-quiz-opt:hover { background: #e2e5ea; }
 body.light-theme .names-input-box .wizard-name-input, body.light-theme .wizard-name-input { background: #eef0f3; color: #16181c; border-color: #d0d5dd; }
-#settings-gear-btn { display: flex; align-items: center; justify-content: center; position: fixed; top: 20px; left: 20px; z-index: 1100; width: 48px; height: 48px; border-radius: 50%; border: none; background: rgba(35,40,48,0.85); font-size: 22px; cursor: pointer; box-shadow: 0 4px 15px rgba(0,0,0,0.4); transition: background 0.2s ease; }
+#settings-gear-btn { display: flex; align-items: center; justify-content: center; position: fixed; bottom: 20px; left: 20px; z-index: 1100; width: 48px; height: 48px; border-radius: 50%; border: none; background: rgba(35,40,48,0.85); font-size: 22px; cursor: pointer; box-shadow: 0 4px 15px rgba(0,0,0,0.4); transition: background 0.2s ease; }
 #settings-gear-btn:hover { background: rgba(98,102,112,0.85); }
-#settings-panel { position: fixed; top: 0; left: 0; transform: translateX(-100%); width: 320px; height: 100%; background: #1c1f26; border-right: 4px solid #a482ff; box-shadow: 5px 0 30px rgba(0,0,0,0.7); padding: 30px 20px; box-sizing: border-box; z-index: 1200; display: flex; flex-direction: column; transition: transform 0.35s ease; }
+#settings-panel { position: fixed; top: 0; left: 0; transform: translateX(-100%); width: min(320px, 92vw); height: 100%; background: #1c1f26; border-right: 4px solid #a482ff; box-shadow: 5px 0 30px rgba(0,0,0,0.7); padding: 30px 20px; box-sizing: border-box; z-index: 1200; display: flex; flex-direction: column; transition: transform 0.35s ease; }
 #settings-panel.open { transform: translateX(0); }
+.settings-panel-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; border-bottom: 2px solid #3b4252; padding-bottom: 12px; }
+.settings-panel-header .modal-header-text { margin-bottom: 0; border-bottom: none; padding-bottom: 0; }
+.btn-icon-close { background: transparent; border: none; color: inherit; font-size: 20px; cursor: pointer; width: 36px; height: 36px; min-width: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; transition: background 0.2s ease; line-height: 1; }
+.btn-icon-close:hover { background: rgba(255,255,255,0.08); }
+.settings-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 16px 0; border-bottom: 1px solid rgba(59,66,82,0.5); }
+.settings-row:last-of-type { border-bottom: none; }
+.settings-row-label { font-size: 15px; font-weight: bold; }
+.toggle-switch { position: relative; display: inline-block; width: 50px; height: 28px; flex-shrink: 0; }
+.toggle-switch input { opacity: 0; width: 0; height: 0; position: absolute; }
+.toggle-slider { position: absolute; inset: 0; cursor: pointer; background: #3b4252; border-radius: 999px; transition: background 0.2s ease; }
+.toggle-slider::before { content: ""; position: absolute; height: 22px; width: 22px; left: 3px; top: 3px; background: #f1f2f3; border-radius: 50%; transition: transform 0.2s ease; box-shadow: 0 2px 6px rgba(0,0,0,0.4); }
+.toggle-switch input:checked + .toggle-slider { background: #50fa7b; }
+.toggle-switch input:checked + .toggle-slider::before { transform: translateX(22px); }
+.btn-transparent { background: transparent; color: inherit; border: 2px solid transparent; padding: 12px 20px; border-radius: 14px; cursor: pointer; font-weight: bold; font-size: 14px; letter-spacing: 0.5px; margin-top: auto; transition: border-color 0.2s ease, background 0.2s ease; }
+.btn-transparent:hover { border-color: #a482ff; background: rgba(164,130,255,0.08); }
+#creators-panel { position: fixed; left: 0; bottom: 0; width: min(320px, 92vw); max-height: 60%; background: #1c1f26; border-top: 4px solid #a482ff; box-shadow: 0 -10px 30px rgba(0,0,0,0.6); padding: 24px 20px; box-sizing: border-box; z-index: 1300; display: flex; flex-direction: column; transform: translateY(100%); transition: transform 0.35s ease; border-radius: 0 20px 0 0; }
+#creators-panel.open { transform: translateY(0); }
+.creators-list { list-style: none; margin: 14px 0 0; padding: 0; display: flex; flex-direction: column; gap: 14px; overflow-y: auto; }
+.creators-list li { position: relative; padding-left: 20px; font-size: 15px; color: #e5e9f0; }
+.creators-list li::before { content: "•"; position: absolute; left: 0; color: #a482ff; font-weight: bold; }
+.creators-list a { color: #8be9fd; text-decoration: none; }
+.creators-list a:hover { text-decoration: underline; }
+body.energy-saving *:hover { transform: none !important; }
+body.energy-saving *:active { transform: none !important; }
+@media (min-width: 1100px) {
+#settings-panel, #creators-panel { width: 420px; }
+}
+@media (min-width: 1500px) {
+#settings-panel, #creators-panel { width: 480px; }
+}
 </style>
 </head>
 <body>
@@ -236,18 +266,47 @@ body.light-theme .names-input-box .wizard-name-input, body.light-theme .wizard-n
 <div id="dice-zone">
 <video id="dice-video" playsinline muted></video>
 </div>
-<button id="roll-button" onclick="playerTurn()" onmousedown="this.style.transform='scale(0.95)'" onmouseup="this.style.transform='scale(1)'" onmouseleave="this.style.transform='scale(1)'" ontouchstart="this.style.transform='scale(0.95)'" ontouchend="this.style.transform='scale(1)'" style="height:60px;width:100%;box-sizing:border-box;border:none;border-radius:20px;font-size:18px;font-weight:bold;font-family:inherit;cursor:pointer;background:#50fa7b;color:#0b3d1d;box-shadow:0 8px 22px rgba(80,250,123,0.5);transition:transform 0.15s ease;">Бросить кубик 🎲</button>
+<button id="roll-button" onclick="playerTurn()" onmousedown="applyPress(this,0.95)" onmouseup="releasePress(this)" onmouseleave="releasePress(this)" ontouchstart="applyPress(this,0.95)" ontouchend="releasePress(this)" style="height:60px;width:100%;box-sizing:border-box;border:none;border-radius:20px;font-size:18px;font-weight:bold;font-family:inherit;cursor:pointer;background:#50fa7b;color:#0b3d1d;box-shadow:0 8px 22px rgba(80,250,123,0.5);transition:transform 0.15s ease;">Бросить кубик 🎲</button>
 <div class="status-bookmark">
 <div class="bookmark-title">📜 Путевой Лист</div>
 <div id="bookmark-players-list"></div>
 </div>
 </div>
 </div>
-<button id="settings-gear-btn" onclick="openSettingsPanel()" onmousedown="this.style.transform='scale(0.9)'" onmouseup="this.style.transform='scale(1)'" onmouseleave="this.style.transform='scale(1)'" ontouchstart="this.style.transform='scale(0.9)'" ontouchend="this.style.transform='scale(1)'">⚙️</button>
+<button id="settings-gear-btn" onclick="openSettingsPanel()" onmousedown="applyPress(this,0.9)" onmouseup="releasePress(this)" onmouseleave="releasePress(this)" ontouchstart="applyPress(this,0.9)" ontouchend="releasePress(this)">⚙️</button>
 <div id="settings-panel">
+<div class="settings-panel-header">
 <div class="modal-header-text" style="color:#a482ff;">⚙️ НАСТРОЙКИ</div>
-<button id="theme-switch-btn" class="btn-mode btn-start-game" style="margin:20px 0;" onclick="toggleTheme()">🌙 Тёмная тема</button>
-<button class="btn-close-modal" style="background:#a482ff;" onclick="closeSettingsPanel()">Закрыть</button>
+<button class="btn-icon-close" onclick="closeSettingsPanel()">✕</button>
+</div>
+<div class="settings-row">
+<span class="settings-row-label">🌙 Тёмная тема</span>
+<label class="toggle-switch">
+<input type="checkbox" id="theme-toggle-input" onchange="toggleTheme()">
+<span class="toggle-slider"></span>
+</label>
+</div>
+<div class="settings-row">
+<span class="settings-row-label">🔋 Энергосбережение</span>
+<label class="toggle-switch">
+<input type="checkbox" id="energy-toggle-input" onchange="toggleEnergySaving()">
+<span class="toggle-slider"></span>
+</label>
+</div>
+<button class="btn-transparent" onclick="openCreatorsPanel()">Создатели</button>
+</div>
+<div id="creators-panel">
+<div class="settings-panel-header">
+<div class="modal-header-text" style="color:#a482ff;">✨ СОЗДАТЕЛИ</div>
+<button class="btn-icon-close" onclick="closeCreatorsPanel()">✕</button>
+</div>
+<ul class="creators-list">
+<li>Зонов Даниил</li>
+<li>Пара ИИ</li>
+<li><a href="https://github.com/F1reFlay/hodilka-golden-ring-game" target="_blank" rel="noopener">Гитхаб</a></li>
+<li>Родители</li>
+<li>Анастасия Михайловна</li>
+</ul>
 </div>
 <button id="hint-bookmark-tab" onclick="toggleHintBookmark()">📖<span class="hint-tab-tooltip">Подсказка о городе</span></button>
 <div id="hint-bookmark-panel">
