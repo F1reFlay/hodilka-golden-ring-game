@@ -171,8 +171,8 @@ body.light-theme .btn-mode:not(.btn-start-game):not(.btn-rules):hover { backgrou
 body.light-theme .btn-mode-selected { background: #eafff1 !important; border-color: #22c55e !important; }
 body.light-theme #side-panel, body.light-theme .status-bookmark, body.light-theme #turn-indicator, body.light-theme #dice-zone { background: #ffffff; border-color: #d0d5dd; color: #16181c; }
 body.light-theme .modal-content-box { background: #ffffff; color: #16181c; }
-body.light-theme .modal-scroll-text { color: #16181c; }
-body.light-theme .modal-header-text { border-bottom-color: #d0d5dd; }
+body.light-theme .modal-content-box .modal-scroll-text { color: #16181c; }
+body.light-theme .modal-content-box .modal-header-text { border-bottom-color: #d0d5dd; }
 body.light-theme .player-status-row { color: #16181c; }
 body.light-theme .step-dot { background: #eef0f3; border-color: #d0d5dd; }
 body.light-theme .btn-quiz-opt { background: #eef0f3; color: #16181c; border-color: #d0d5dd; }
@@ -184,18 +184,22 @@ body.light-theme .names-input-box .wizard-name-input, body.light-theme .wizard-n
 #settings-panel.open { transform: translateX(0); }
 .settings-panel-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; border-bottom: 2px solid #3b4252; padding-bottom: 12px; }
 .settings-panel-header .modal-header-text { margin-bottom: 0; border-bottom: none; padding-bottom: 0; }
-.btn-icon-close { background: transparent; border: none; color: inherit; font-size: 20px; cursor: pointer; width: 36px; height: 36px; min-width: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; transition: background 0.2s ease; line-height: 1; }
+.btn-icon-close { background: transparent; border: none; color: #f1f2f3; font-size: 20px; cursor: pointer; width: 36px; height: 36px; min-width: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; transition: background 0.2s ease; line-height: 1; }
 .btn-icon-close:hover { background: rgba(255,255,255,0.08); }
 .settings-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 16px 0; border-bottom: 1px solid rgba(59,66,82,0.5); }
 .settings-row:last-of-type { border-bottom: none; }
-.settings-row-label { font-size: 15px; font-weight: bold; }
+.settings-row-label { font-size: 15px; font-weight: bold; color: #f1f2f3; }
 .toggle-switch { position: relative; display: inline-block; width: 50px; height: 28px; flex-shrink: 0; }
 .toggle-switch input { opacity: 0; width: 0; height: 0; position: absolute; }
 .toggle-slider { position: absolute; inset: 0; cursor: pointer; background: #3b4252; border-radius: 999px; transition: background 0.2s ease; }
 .toggle-slider::before { content: ""; position: absolute; height: 22px; width: 22px; left: 3px; top: 3px; background: #f1f2f3; border-radius: 50%; transition: transform 0.2s ease; box-shadow: 0 2px 6px rgba(0,0,0,0.4); }
 .toggle-switch input:checked + .toggle-slider { background: #50fa7b; }
 .toggle-switch input:checked + .toggle-slider::before { transform: translateX(22px); }
-.btn-transparent { background: transparent; color: inherit; border: 2px solid transparent; padding: 12px 20px; border-radius: 14px; cursor: pointer; font-weight: bold; font-size: 14px; letter-spacing: 0.5px; margin-top: auto; transition: border-color 0.2s ease, background 0.2s ease; }
+.btn-transparent { background: transparent; color: #f1f2f3; border: 2px solid transparent; padding: 12px 20px; border-radius: 14px; cursor: pointer; font-weight: bold; font-size: 14px; letter-spacing: 0.5px; margin-top: auto; transition: border-color 0.2s ease, background 0.2s ease; }
+.settings-row-volume { flex-direction: column; align-items: stretch; gap: 10px; border-bottom: none !important; }
+.settings-volume-slider { width: 100%; box-sizing: border-box; -webkit-appearance: none; appearance: none; height: 8px; border-radius: 6px; background: linear-gradient(90deg, #3b4252, #50fa7b); outline: none; cursor: pointer; }
+.settings-volume-slider::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 22px; height: 22px; border-radius: 50%; background: #a482ff; border: 3px solid #f1f2f3; box-shadow: 0 2px 8px rgba(0,0,0,0.5); cursor: pointer; }
+.settings-volume-slider::-moz-range-thumb { width: 22px; height: 22px; border-radius: 50%; background: #a482ff; border: 3px solid #f1f2f3; box-shadow: 0 2px 8px rgba(0,0,0,0.5); cursor: pointer; border: none; }
 .btn-transparent:hover { border-color: #a482ff; background: rgba(164,130,255,0.08); }
 #creators-panel { position: fixed; left: 0; bottom: 0; width: min(320px, 92vw); max-height: 60%; background: #1c1f26; border-top: 4px solid #a482ff; box-shadow: 0 -10px 30px rgba(0,0,0,0.6); padding: 24px 20px; box-sizing: border-box; z-index: 1300; display: flex; flex-direction: column; transform: translateY(100%); transition: transform 0.35s ease; border-radius: 0 20px 0 0; }
 #creators-panel.open { transform: translateY(0); }
@@ -304,6 +308,17 @@ body.energy-saving .btn-transparent:hover { transform: none !important; }
 <input type="checkbox" id="energy-toggle-input" onchange="toggleEnergySaving()">
 <span class="toggle-slider"></span>
 </label>
+</div>
+<div class="settings-row">
+<span class="settings-row-label">🔊 Звук</span>
+<label class="toggle-switch">
+<input type="checkbox" id="sound-toggle-input" onchange="toggleSound()">
+<span class="toggle-slider"></span>
+</label>
+</div>
+<div class="settings-row settings-row-volume" id="sound-volume-row">
+<span class="settings-row-label">🔉 Громкость</span>
+<input type="range" class="settings-volume-slider" id="sound-volume-slider" min="0" max="100" value="70" oninput="setSoundVolume(this.value)">
 </div>
 <button class="btn-transparent" onclick="openCreatorsPanel()">Создатели</button>
 </div>
