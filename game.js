@@ -1026,34 +1026,88 @@ function nextTurn() {
 }
 
 // ==========================================
-// ГЕЙМ ЧАСТЬ 6: ТЕМА ОФОРМЛЕНИЯ И ПАНЕЛЬ НАСТРОЕК
+// ГЕЙМ ЧАСТЬ 6: ТЕМА, ЭНЕРГОСБЕРЕЖЕНИЕ И ПАНЕЛЬ НАСТРОЕК
 // ==========================================
+let energySavingMode = false;
+
+function applyPress(el, scale) {
+    if (energySavingMode) return;
+    el.style.transform = "scale(" + scale + ")";
+}
+
+function releasePress(el) {
+    if (energySavingMode) return;
+    el.style.transform = "scale(1)";
+}
+
 function openSettingsPanel() {
     document.getElementById("settings-panel").classList.add("open");
 }
 
 function closeSettingsPanel() {
     document.getElementById("settings-panel").classList.remove("open");
+    closeCreatorsPanel();
 }
 
-function updateThemeSwitchLabel() {
+function openCreatorsPanel() {
+    document.getElementById("creators-panel").classList.add("open");
+}
+
+function closeCreatorsPanel() {
+    const panel = document.getElementById("creators-panel");
+    if (panel) { panel.classList.remove("open"); }
+}
+
+function syncThemeToggleUI() {
     const isLight = document.body.classList.contains("light-theme");
-    const btn = document.getElementById("theme-switch-btn");
-    if (btn) { btn.textContent = isLight ? "🌞 Светлая тема" : "🌙 Тёмная тема"; }
+    const input = document.getElementById("theme-toggle-input");
+    if (input) { input.checked = isLight; }
 }
 
 function toggleTheme() {
     document.body.classList.toggle("light-theme");
     const isLight = document.body.classList.contains("light-theme");
     try { localStorage.setItem("goldenRingTheme", isLight ? "light" : "dark"); } catch (e) {}
-    updateThemeSwitchLabel();
+    syncThemeToggleUI();
+}
+
+function syncEnergyToggleUI() {
+    const input = document.getElementById("energy-toggle-input");
+    if (input) { input.checked = energySavingMode; }
+}
+
+function toggleEnergySaving() {
+    energySavingMode = !energySavingMode;
+    document.body.classList.toggle("energy-saving", energySavingMode);
+    try { localStorage.setItem("goldenRingEnergySaving", energySavingMode ? "1" : "0"); } catch (e) {}
+    syncEnergyToggleUI();
 }
 
 function initTheme() {
-    let saved = null;
-    try { saved = localStorage.getItem("goldenRingTheme"); } catch (e) {}
-    if (saved === "light") { document.body.classList.add("light-theme"); }
-    updateThemeSwitchLabel();
+    let savedTheme = null;
+    try { savedTheme = localStorage.getItem("goldenRingTheme"); } catch (e) {}
+    if (savedTheme === "light") { document.body.classList.add("light-theme"); }
+
+    let savedEnergy = null;
+    try { savedEnergy = localStorage.getItem("goldenRingEnergySaving"); } catch (e) {}
+    if (savedEnergy === "1") {
+        energySavingMode = true;
+        document.body.classList.add("energy-saving");
+    }
+
+    syncThemeToggleUI();
+    syncEnergyToggleUI();
 }
+
+document.addEventListener("keydown", function(e) {
+    if (e.key !== "Escape" && e.key !== "Esc") return;
+    const creators = document.getElementById("creators-panel");
+    const settings = document.getElementById("settings-panel");
+    if (creators && creators.classList.contains("open")) {
+        closeCreatorsPanel();
+    } else if (settings && settings.classList.contains("open")) {
+        closeSettingsPanel();
+    }
+});
 
 initTheme();
