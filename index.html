@@ -163,20 +163,21 @@ body.light-theme { background: #f1f2f3; color: #16181c; }
 body.light-theme .title-container { background: #ffffff; border-color: #d0d5dd; }
 body.light-theme .game-title { color: #7c3aed; text-shadow: none; }
 body.light-theme .small-subtitle { color: #4b5563; }
-body.light-theme #welcome-screen, body.light-theme #start-screen { background: linear-gradient(rgba(255,255,255,0.92), rgba(255,255,255,0.92)), url('start-bg.jpg') center/cover no-repeat; border-color: #d0d5dd; }
+body.light-theme #welcome-screen, body.light-theme #start-screen { background: linear-gradient(rgba(255,255,255,0.55), rgba(255,255,255,0.55)), url('start-bg.jpg') center/cover no-repeat; border-color: #d0d5dd; }
 body.light-theme h1.menu-main-title { color: #7c3aed; text-shadow: none; }
-body.light-theme h2.menu-sub-title { color: #4b5563; }
-body.light-theme .btn-mode { background: #eef0f3; color: #16181c; border-color: #d0d5dd; }
-body.light-theme .btn-mode:hover { background: #e2e5ea; }
-body.light-theme #side-panel, body.light-theme .status-bookmark, body.light-theme #turn-indicator, body.light-theme #dice-zone { background: #ffffff; border-color: #d0d5dd; color: #16181c; }
-body.light-theme canvas { background: #ffffff; border-color: #d0d5dd; }
+body.light-theme h2.menu-sub-title { color: #374151; }
+body.light-theme .btn-mode:not(.btn-start-game):not(.btn-rules) { background: #eef0f3; color: #16181c; border-color: #d0d5dd; }
+body.light-theme .btn-mode:not(.btn-start-game):not(.btn-rules):hover { background: #e2e5ea; }
+body.light-theme .btn-mode-selected { background: #eafff1 !important; border-color: #22c55e !important; }
+body.light-theme #side-panel, body.light-theme .status-bookmark, body.light-theme #turn-indicator { background: #ffffff; border-color: #d0d5dd; color: #16181c; }
 body.light-theme .modal-content-box { background: #ffffff; color: #16181c; }
 body.light-theme .modal-scroll-text { color: #16181c; }
 body.light-theme .modal-header-text { border-bottom-color: #d0d5dd; }
 body.light-theme .player-status-row { color: #16181c; }
 body.light-theme .step-dot { background: #eef0f3; border-color: #d0d5dd; }
+body.light-theme .btn-quiz-opt { background: #eef0f3; color: #16181c; border-color: #d0d5dd; }
+body.light-theme .btn-quiz-opt:hover { background: #e2e5ea; }
 body.light-theme .names-input-box .wizard-name-input, body.light-theme .wizard-name-input { background: #eef0f3; color: #16181c; border-color: #d0d5dd; }
-body.light-theme #theme-switch-btn { background: #eef0f3; color: #16181c; }
 #settings-gear-btn { display: flex; align-items: center; justify-content: center; position: fixed; top: 20px; left: 20px; z-index: 1100; width: 48px; height: 48px; border-radius: 50%; border: none; background: rgba(35,40,48,0.85); font-size: 22px; cursor: pointer; box-shadow: 0 4px 15px rgba(0,0,0,0.4); transition: background 0.2s ease; }
 #settings-gear-btn:hover { background: rgba(98,102,112,0.85); }
 #settings-panel { position: fixed; top: 0; left: 0; transform: translateX(-100%); width: 320px; height: 100%; background: #1c1f26; border-right: 4px solid #a482ff; box-shadow: 5px 0 30px rgba(0,0,0,0.7); padding: 30px 20px; box-sizing: border-box; z-index: 1200; display: flex; flex-direction: column; transition: transform 0.35s ease; }
