@@ -204,8 +204,20 @@ body.light-theme .names-input-box .wizard-name-input, body.light-theme .wizard-n
 .creators-list li::before { content: "•"; position: absolute; left: 0; color: #a482ff; font-weight: bold; }
 .creators-list a { color: #8be9fd; text-decoration: none; }
 .creators-list a:hover { text-decoration: underline; }
-body.energy-saving *:hover { transform: none !important; }
-body.energy-saving *:active { transform: none !important; }
+body.energy-saving * { transition: none !important; animation: none !important; }
+body.energy-saving .btn-mode:hover,
+body.energy-saving .btn-mode:active,
+body.energy-saving .dice-roll-btn:hover,
+body.energy-saving .dice-roll-btn:active,
+body.energy-saving .btn-close-modal:hover,
+body.energy-saving .btn-close-modal:active,
+body.energy-saving .btn-restart:hover,
+body.energy-saving .btn-restart:active,
+body.energy-saving .btn-quiz-opt:hover,
+body.energy-saving #settings-gear-btn:hover,
+body.energy-saving #hint-bookmark-tab:hover,
+body.energy-saving .btn-icon-close:hover,
+body.energy-saving .btn-transparent:hover { transform: none !important; }
 @media (min-width: 1100px) {
 #settings-panel, #creators-panel { width: 420px; }
 }
