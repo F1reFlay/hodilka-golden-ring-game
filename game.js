@@ -731,9 +731,9 @@ function updateUI() {
     turnIndicator.style.color = activePlayer.color;
     
     if (!activePlayer.isBot && !isMoving) {
-        rollButton.classList.remove("btn-roll-inactive");
+        rollButton.disabled = false;
     } else {
-        rollButton.classList.add("btn-roll-inactive");
+        rollButton.disabled = true;
     }
 
     const listContainer = document.getElementById("bookmark-players-list");
@@ -764,7 +764,6 @@ function updateUI() {
 
 function playerTurn() {
     if (isMoving) return;
-    if (players[currentTurn].isBot) return;
     executeTurn();
 }
 
@@ -790,22 +789,14 @@ function executeTurn() {
         videoEl.src = "cubic_" + diceRoll + ".webm";
         videoEl.load();
         
-        let hasAdvanced = false;
-        const proceedOnce = function() {
-            if (hasAdvanced) return;
-            hasAdvanced = true;
-            moveStepByStep(activePlayer, diceRoll, diceRoll, true);
-        };
-
         videoEl.play().catch(err => {
             console.warn("Видео заблокировано браузером, шагаем сразу:", err);
-            proceedOnce();
+            moveStepByStep(activePlayer, diceRoll, diceRoll, true);
         });
         
-        videoEl.onended = proceedOnce;
-        // Защита от зависания хода, если видео кубика не смогло доиграть
-        // (например, из-за медленной загрузки карты/сети)
-        setTimeout(proceedOnce, 2500);
+        videoEl.onended = function() {
+            moveStepByStep(activePlayer, diceRoll, diceRoll, true);
+        };
     } else {
         moveStepByStep(activePlayer, diceRoll, diceRoll, true);
     }
@@ -903,14 +894,13 @@ function checkCellEffect(player) {
     launchQuiz(player);
 }
 
-function toggleHintBookmark() {
-    const panel = document.getElementById("hint-bookmark-panel");
-    panel.classList.toggle("open");
-}
-
-function closeHintBookmark() {
-    const panel = document.getElementById("hint-bookmark-panel");
-    panel.classList.remove("open");
+function toggleQuizHint() {
+    const hintBlock = document.getElementById("quiz-modal-hint-text");
+    if (hintBlock.style.display === "block") {
+        hintBlock.style.display = "none";
+    } else {
+        hintBlock.style.display = "block";
+    }
 }
 
 function launchQuiz(player) {
@@ -925,18 +915,18 @@ function launchQuiz(player) {
     const randomIndex = Math.floor(Math.random() * cityQuestions.length);
     const qData = cityQuestions[randomIndex];
     
-    closeHintBookmark();
-    const hintTextEl = document.getElementById("hint-bookmark-text");
-    if (hintTextEl) {
-        hintTextEl.textContent = qData.hint;
+    const hintBlock = document.getElementById("quiz-modal-hint-text");
+    if (hintBlock) {
+        hintBlock.style.display = "none";
+        hintBlock.textContent = qData.hint;
     }
     
-    const hintTab = document.getElementById("hint-bookmark-tab");
-    if (hintTab) {
+    const hintBtn = document.getElementById("hint-toggle-button");
+    if (hintBtn) {
         if (player.visitedGolds.includes(targetCity)) {
-            hintTab.style.display = "none";
+            hintBtn.style.display = "none";
         } else {
-            hintTab.style.display = "flex";
+            hintBtn.style.display = "block";
         }
     }
     
@@ -973,8 +963,6 @@ function launchQuiz(player) {
                 
                 setTimeout(() => {
                     document.getElementById("quiz-modal").style.display = "none";
-                    closeHintBookmark();
-                    if (hintTab) { hintTab.style.display = "none"; }
                     finishCellEffect();
                 }, 1500);
             };
@@ -982,7 +970,6 @@ function launchQuiz(player) {
         });
         document.getElementById("quiz-modal").style.display = "block";
     } else {
-        if (hintTab) { hintTab.style.display = "none"; }
         const botAnswersCorrectly = Math.random() < BOT_QUIZ_ACCURACY;
         if (botAnswersCorrectly) {
             player.score += 10;
