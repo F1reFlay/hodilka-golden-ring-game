@@ -1024,3 +1024,36 @@ function nextTurn() {
         setTimeout(() => { executeTurn(); }, 1000); 
     }
 }
+
+// ==========================================
+// ГЕЙМ ЧАСТЬ 6: ТЕМА ОФОРМЛЕНИЯ И ПАНЕЛЬ НАСТРОЕК
+// ==========================================
+function openSettingsPanel() {
+    document.getElementById("settings-panel").classList.add("open");
+}
+
+function closeSettingsPanel() {
+    document.getElementById("settings-panel").classList.remove("open");
+}
+
+function updateThemeSwitchLabel() {
+    const isLight = document.body.classList.contains("light-theme");
+    const btn = document.getElementById("theme-switch-btn");
+    if (btn) { btn.textContent = isLight ? "🌞 Светлая тема" : "🌙 Тёмная тема"; }
+}
+
+function toggleTheme() {
+    document.body.classList.toggle("light-theme");
+    const isLight = document.body.classList.contains("light-theme");
+    try { localStorage.setItem("goldenRingTheme", isLight ? "light" : "dark"); } catch (e) {}
+    updateThemeSwitchLabel();
+}
+
+function initTheme() {
+    let saved = null;
+    try { saved = localStorage.getItem("goldenRingTheme"); } catch (e) {}
+    if (saved === "light") { document.body.classList.add("light-theme"); }
+    updateThemeSwitchLabel();
+}
+
+initTheme();
