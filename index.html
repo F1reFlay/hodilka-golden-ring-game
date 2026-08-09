@@ -157,9 +157,54 @@ body { padding: 15px; }
 .color-slider-box { gap: 10px; }
 .color-preview-swatch { width: 32px; height: 32px; min-width: 32px; }
 }
+body.light-theme { background: #f1f2f3; color: #16181c; }
+body.light-theme .title-container { background: #ffffff; border-color: #d0d5dd; }
+body.light-theme .game-title { color: #7c3aed; text-shadow: none; }
+body.light-theme .small-subtitle { color: #4b5563; }
+body.light-theme #welcome-screen, body.light-theme #start-screen { background: linear-gradient(rgba(255,255,255,0.92), rgba(255,255,255,0.92)), url('start-bg.jpg') center/cover no-repeat; border-color: #d0d5dd; }
+body.light-theme h1.menu-main-title { color: #7c3aed; text-shadow: none; }
+body.light-theme h2.menu-sub-title { color: #4b5563; }
+body.light-theme .btn-mode { background: #eef0f3; color: #16181c; border-color: #d0d5dd; }
+body.light-theme .btn-mode:hover { background: #e2e5ea; }
+body.light-theme #side-panel, body.light-theme .status-bookmark, body.light-theme #turn-indicator, body.light-theme #dice-zone { background: #ffffff; border-color: #d0d5dd; color: #16181c; }
+body.light-theme canvas { background: #ffffff; border-color: #d0d5dd; }
+body.light-theme .modal-content-box { background: #ffffff; color: #16181c; }
+body.light-theme .modal-scroll-text { color: #16181c; }
+body.light-theme .modal-header-text { border-bottom-color: #d0d5dd; }
+body.light-theme .player-status-row { color: #16181c; }
+body.light-theme .step-dot { background: #eef0f3; border-color: #d0d5dd; }
+body.light-theme .names-input-box .wizard-name-input, body.light-theme .wizard-name-input { background: #eef0f3; color: #16181c; border-color: #d0d5dd; }
+.settings-gear-btn { position: fixed; bottom: 16px; left: 16px; z-index: 1300; width: 46px; height: 46px; border: none; border-radius: 50%; background: transparent; color: #f1f2f3; font-size: 22px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: transform 0.15s ease, background 0.15s ease; }
+.settings-gear-btn:hover { background: #3b4252; }
+.settings-panel { position: fixed; bottom: 72px; left: 16px; z-index: 1300; width: 260px; background: #1c1f26; border: 1px solid #3b4252; border-radius: 18px; padding: 18px; box-shadow: 0 10px 30px rgba(0,0,0,0.6); opacity: 0; transform: translateY(10px) scale(0.95); pointer-events: none; transition: all 0.2s ease; box-sizing: border-box; }
+.settings-panel.open { opacity: 1; transform: translateY(0) scale(1); pointer-events: auto; }
+.settings-panel-title { font-size: 14px; font-weight: bold; color: #a482ff; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 14px; text-align: center; }
+.settings-row { display: flex; align-items: center; justify-content: space-between; font-size: 14px; font-weight: bold; color: #f1f2f3; }
+.theme-switch { position: relative; display: inline-block; width: 46px; height: 26px; }
+.theme-switch input { opacity: 0; width: 0; height: 0; }
+.theme-switch-slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background: #3b4252; border-radius: 26px; transition: 0.2s; }
+.theme-switch-slider:before { position: absolute; content: ""; height: 20px; width: 20px; left: 3px; bottom: 3px; background: #f1f2f3; border-radius: 50%; transition: 0.2s; }
+.theme-switch input:checked + .theme-switch-slider { background: #50fa7b; }
+.theme-switch input:checked + .theme-switch-slider:before { transform: translateX(20px); background: #0b3d1d; }
+body.light-theme .settings-panel { background: #ffffff; border-color: #d0d5dd; }
+body.light-theme .settings-row { color: #16181c; }
+body.light-theme .settings-gear-btn { color: #16181c; }
+body.light-theme .settings-gear-btn:hover { background: #e2e5ea; }
+body.light-theme .theme-switch-slider { background: #d0d5dd; }
 </style>
 </head>
 <body>
+<button class="settings-gear-btn" onclick="toggleSettingsPanel()" onmousedown="this.style.transform='scale(0.85)'" onmouseup="this.style.transform='scale(1)'" onmouseleave="this.style.transform='scale(1)'" ontouchstart="this.style.transform='scale(0.85)'" ontouchend="this.style.transform='scale(1)'">⚙️</button>
+<div id="settings-panel" class="settings-panel">
+<div class="settings-panel-title">Настройки</div>
+<div class="settings-row">
+<span>Светлая тема</span>
+<label class="theme-switch">
+<input type="checkbox" id="theme-switch-input" onchange="toggleTheme()">
+<span class="theme-switch-slider"></span>
+</label>
+</div>
+</div>
 <div class="title-container">
 <div class="small-subtitle">Игра-ходилка</div>
 <div class="game-title">Золотое кольцо России</div>
@@ -167,7 +212,7 @@ body { padding: 15px; }
 <div id="welcome-screen">
 <h1 class="menu-main-title">Добро пожаловать в игру!</h1>
 <h2 class="menu-sub-title">Вас ждет увлекательное путешествие по древним городам Золотого кольца России. Проверяйте свои знания, отвечайте на вопросы викторины и набирайте баллы!</h2>
-<div class="mode-section">
+<div class="mode-section" style="display:flex;justify-content:center;">
 <button class="btn-mode btn-start-game" onclick="openModeSelection()">Начать игру 🚀</button>
 </div>
 <div class="mode-section">
@@ -195,7 +240,7 @@ body { padding: 15px; }
 </div>
 </div>
 </div>
-<div class="mode-section" style="margin-top: 20px;">
+<div class="mode-section" style="margin-top: 20px; display:flex; justify-content:center;">
 <button id="wizard-start-button" class="btn-mode btn-start-game" style="display:none;">Начать 🚀</button>
 </div>
 <div class="mode-section">
