@@ -731,9 +731,15 @@ function updateUI() {
     turnIndicator.style.color = activePlayer.color;
     
     if (!activePlayer.isBot && !isMoving) {
-        rollButton.classList.remove("dice-roll-btn-inactive");
+        rollButton.style.background = "#50fa7b";
+        rollButton.style.color = "#0b3d1d";
+        rollButton.style.boxShadow = "0 8px 22px rgba(80,250,123,0.5)";
+        rollButton.style.cursor = "pointer";
     } else {
-        rollButton.classList.add("dice-roll-btn-inactive");
+        rollButton.style.background = "#ff5555";
+        rollButton.style.color = "#4d0f0f";
+        rollButton.style.boxShadow = "0 8px 22px rgba(255,85,85,0.5)";
+        rollButton.style.cursor = "not-allowed";
     }
 
     const listContainer = document.getElementById("bookmark-players-list");
@@ -764,6 +770,7 @@ function updateUI() {
 
 function playerTurn() {
     if (isMoving) return;
+    if (players[currentTurn].isBot) return;
     executeTurn();
 }
 
@@ -789,14 +796,22 @@ function executeTurn() {
         videoEl.src = "cubic_" + diceRoll + ".webm";
         videoEl.load();
         
-        videoEl.play().catch(err => {
-            console.warn("Видео заблокировано браузером, шагаем сразу:", err);
-            moveStepByStep(activePlayer, diceRoll, diceRoll, true);
-        });
-        
-        videoEl.onended = function() {
+        let hasAdvanced = false;
+        const proceedOnce = function() {
+            if (hasAdvanced) return;
+            hasAdvanced = true;
             moveStepByStep(activePlayer, diceRoll, diceRoll, true);
         };
+
+        videoEl.play().catch(err => {
+            console.warn("Видео заблокировано браузером, шагаем сразу:", err);
+            proceedOnce();
+        });
+        
+        videoEl.onended = proceedOnce;
+        // Защита от зависания хода, если видео кубика не смогло доиграть
+        // (например, из-за медленной загрузки карты/сети)
+        setTimeout(proceedOnce, 2500);
     } else {
         moveStepByStep(activePlayer, diceRoll, diceRoll, true);
     }
@@ -894,13 +909,14 @@ function checkCellEffect(player) {
     launchQuiz(player);
 }
 
-function toggleQuizHint() {
-    const hintBlock = document.getElementById("quiz-modal-hint-text");
-    if (hintBlock.style.display === "block") {
-        hintBlock.style.display = "none";
-    } else {
-        hintBlock.style.display = "block";
-    }
+function toggleHintBookmark() {
+    const panel = document.getElementById("hint-bookmark-panel");
+    panel.classList.toggle("open");
+}
+
+function closeHintBookmark() {
+    const panel = document.getElementById("hint-bookmark-panel");
+    panel.classList.remove("open");
 }
 
 function launchQuiz(player) {
@@ -915,18 +931,18 @@ function launchQuiz(player) {
     const randomIndex = Math.floor(Math.random() * cityQuestions.length);
     const qData = cityQuestions[randomIndex];
     
-    const hintBlock = document.getElementById("quiz-modal-hint-text");
-    if (hintBlock) {
-        hintBlock.style.display = "none";
-        hintBlock.textContent = qData.hint;
+    closeHintBookmark();
+    const hintTextEl = document.getElementById("hint-bookmark-text");
+    if (hintTextEl) {
+        hintTextEl.textContent = qData.hint;
     }
     
-    const hintBtn = document.getElementById("hint-toggle-button");
-    if (hintBtn) {
+    const hintTab = document.getElementById("hint-bookmark-tab");
+    if (hintTab) {
         if (player.visitedGolds.includes(targetCity)) {
-            hintBtn.style.display = "none";
+            hintTab.style.display = "none";
         } else {
-            hintBtn.style.display = "block";
+            hintTab.style.display = "flex";
         }
     }
     
@@ -963,6 +979,8 @@ function launchQuiz(player) {
                 
                 setTimeout(() => {
                     document.getElementById("quiz-modal").style.display = "none";
+                    closeHintBookmark();
+                    if (hintTab) { hintTab.style.display = "none"; }
                     finishCellEffect();
                 }, 1500);
             };
@@ -970,6 +988,7 @@ function launchQuiz(player) {
         });
         document.getElementById("quiz-modal").style.display = "block";
     } else {
+        if (hintTab) { hintTab.style.display = "none"; }
         const botAnswersCorrectly = Math.random() < BOT_QUIZ_ACCURACY;
         if (botAnswersCorrectly) {
             player.score += 10;
