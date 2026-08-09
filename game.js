@@ -731,9 +731,9 @@ function updateUI() {
     turnIndicator.style.color = activePlayer.color;
     
     if (!activePlayer.isBot && !isMoving) {
-        rollButton.disabled = false;
+        rollButton.classList.remove("dice-roll-btn-inactive");
     } else {
-        rollButton.disabled = true;
+        rollButton.classList.add("dice-roll-btn-inactive");
     }
 
     const listContainer = document.getElementById("bookmark-players-list");
