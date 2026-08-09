@@ -38,8 +38,10 @@ canvas { border: 4px solid #2e3440; background: #16181c; border-radius: 16px; bo
 .step-dot.filled.active { border-color: #a482ff; }
 @keyframes dotFlowIn { from { transform: scale(0); opacity: 0; } to { transform: scale(1); opacity: 1; } }
 .step-dot-flow-in { animation: dotFlowIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) both; }
-.step-pages { position: relative; }
+.step-pages { position: relative; min-height: 260px; display: flex; flex-direction: column; justify-content: center; }
 .step-page { display: none; }
+.wizard-nav-wrap { display: flex; justify-content: center; margin: 25px 0 10px; }
+#wizard-start-button { padding: 18px 50px !important; font-size: 19px !important; border-radius: 9999px !important; }
 .difficulty-slider-box { display: flex; align-items: center; gap: 14px; margin: 25px 0 10px; }
 .difficulty-label { font-size: 12px; font-weight: bold; color: #cbd5e1; text-transform: uppercase; letter-spacing: 1px; white-space: nowrap; }
 .wizard-difficulty-slider { flex-grow: 1; -webkit-appearance: none; appearance: none; height: 8px; border-radius: 6px; background: linear-gradient(90deg, #8be9fd, #f1c40f, #ff5555); outline: none; cursor: pointer; }
@@ -174,7 +176,7 @@ body.light-theme .modal-header-text { border-bottom-color: #d0d5dd; }
 body.light-theme .player-status-row { color: #16181c; }
 body.light-theme .step-dot { background: #eef0f3; border-color: #d0d5dd; }
 body.light-theme .names-input-box .wizard-name-input, body.light-theme .wizard-name-input { background: #eef0f3; color: #16181c; border-color: #d0d5dd; }
-body.light-theme #theme-toggle-btn { color: #16181c; }
+body.light-theme #theme-switch-btn { background: #eef0f3; color: #16181c; }
 #settings-gear-btn { display: flex; align-items: center; justify-content: center; position: fixed; top: 20px; left: 20px; z-index: 1100; width: 48px; height: 48px; border-radius: 50%; border: none; background: rgba(35,40,48,0.85); font-size: 22px; cursor: pointer; box-shadow: 0 4px 15px rgba(0,0,0,0.4); transition: background 0.2s ease; }
 #settings-gear-btn:hover { background: rgba(98,102,112,0.85); }
 #settings-panel { position: fixed; top: 0; left: 0; transform: translateX(-100%); width: 320px; height: 100%; background: #1c1f26; border-right: 4px solid #a482ff; box-shadow: 5px 0 30px rgba(0,0,0,0.7); padding: 30px 20px; box-sizing: border-box; z-index: 1200; display: flex; flex-direction: column; transition: transform 0.35s ease; }
@@ -182,7 +184,6 @@ body.light-theme #theme-toggle-btn { color: #16181c; }
 </style>
 </head>
 <body>
-<button id="theme-toggle-btn" onclick="toggleTheme()" onmouseover="this.style.background='#3b4252'" onmouseout="this.style.background='transparent'" onmousedown="this.style.transform='scale(0.9)'" onmouseup="this.style.transform='scale(1)'" onmouseleave="this.style.transform='scale(1)';this.style.background='transparent'" ontouchstart="this.style.transform='scale(0.9)';this.style.background='#3b4252'" ontouchend="this.style.transform='scale(1)';this.style.background='transparent'" style="position:fixed;top:16px;right:16px;z-index:1300;width:44px;height:44px;border:none;border-radius:50%;background:transparent;color:#f1f2f3;font-size:22px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:transform 0.15s ease, background 0.15s ease;">⚙️</button>
 <div class="title-container">
 <div class="small-subtitle">Игра-ходилка</div>
 <div class="game-title">Золотое кольцо России</div>
@@ -218,7 +219,7 @@ body.light-theme #theme-toggle-btn { color: #16181c; }
 </div>
 </div>
 </div>
-<div class="mode-section" style="margin-top: 20px;">
+<div class="wizard-nav-wrap">
 <button id="wizard-start-button" class="btn-mode btn-start-game" style="display:none;">Начать 🚀</button>
 </div>
 <div class="mode-section">
@@ -244,7 +245,7 @@ body.light-theme #theme-toggle-btn { color: #16181c; }
 <button id="settings-gear-btn" onclick="openSettingsPanel()" onmousedown="this.style.transform='scale(0.9)'" onmouseup="this.style.transform='scale(1)'" onmouseleave="this.style.transform='scale(1)'" ontouchstart="this.style.transform='scale(0.9)'" ontouchend="this.style.transform='scale(1)'">⚙️</button>
 <div id="settings-panel">
 <div class="modal-header-text" style="color:#a482ff;">⚙️ НАСТРОЙКИ</div>
-<div class="modal-scroll-text" style="flex-grow:0;">Скоро здесь появится выбор темы оформления.</div>
+<button id="theme-switch-btn" class="btn-mode btn-start-game" style="margin:20px 0;" onclick="toggleTheme()">🌙 Тёмная тема</button>
 <button class="btn-close-modal" style="background:#a482ff;" onclick="closeSettingsPanel()">Закрыть</button>
 </div>
 <button id="hint-bookmark-tab" onclick="toggleHintBookmark()">📖<span class="hint-tab-tooltip">Подсказка о городе</span></button>
