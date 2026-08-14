@@ -178,7 +178,8 @@ body.light-theme .step-dot { background: #eef0f3; border-color: #d0d5dd; }
 body.light-theme .btn-quiz-opt { background: #eef0f3; color: #16181c; border-color: #d0d5dd; }
 body.light-theme .btn-quiz-opt:hover { background: #e2e5ea; }
 body.light-theme .names-input-box .wizard-name-input, body.light-theme .wizard-name-input { background: #eef0f3; color: #16181c; border-color: #d0d5dd; }
-#settings-gear-btn { display: flex; align-items: center; justify-content: center; position: fixed; bottom: 20px; left: 20px; z-index: 1100; width: 48px; height: 48px; border-radius: 50%; border: none; background: rgba(35,40,48,0.85); font-size: 22px; cursor: pointer; box-shadow: 0 4px 15px rgba(0,0,0,0.4); transition: background 0.2s ease; }
+#settings-gear-btn { display: flex; align-items: center; justify-content: center; position: fixed; bottom: 20px; left: 20px; z-index: 1100; width: 48px; height: 48px; border-radius: 50%; border: none; background: rgba(35,40,48,0.85); font-size: 22px; cursor: grab; box-shadow: 0 4px 15px rgba(0,0,0,0.4); transition: background 0.2s ease, left 0.3s ease, right 0.3s ease, top 0.3s ease, bottom 0.3s ease; touch-action: none; user-select: none; }
+#settings-gear-btn:active { cursor: grabbing; }
 #settings-gear-btn:hover { background: rgba(98,102,112,0.85); }
 #settings-panel { position: fixed; top: 0; left: 0; transform: translateX(-100%); width: min(320px, 92vw); height: 100%; background: #1c1f26; border-right: 4px solid #a482ff; box-shadow: 5px 0 30px rgba(0,0,0,0.7); padding: 30px 20px; box-sizing: border-box; z-index: 1200; display: flex; flex-direction: column; transition: transform 0.35s ease; }
 #settings-panel.open { transform: translateX(0); }
@@ -289,7 +290,7 @@ body.energy-saving .btn-transparent:hover { transform: none !important; }
 </div>
 </div>
 </div>
-<button id="settings-gear-btn" onclick="openSettingsPanel()" onmousedown="applyPress(this,0.9)" onmouseup="releasePress(this)" onmouseleave="releasePress(this)" ontouchstart="applyPress(this,0.9)" ontouchend="releasePress(this)">⚙️</button>
+<button id="settings-gear-btn" onmousedown="applyPress(this,0.9)" onmouseup="releasePress(this)" onmouseleave="releasePress(this)" ontouchstart="applyPress(this,0.9)" ontouchend="releasePress(this)">⚙️</button>
 <div id="settings-panel">
 <div class="settings-panel-header">
 <div class="modal-header-text" style="color:#a482ff;">⚙️ НАСТРОЙКИ</div>
@@ -333,6 +334,10 @@ body.energy-saving .btn-transparent:hover { transform: none !important; }
 <li><a href="https://github.com/F1reFlay/hodilka-golden-ring-game" target="_blank" rel="noopener">Гитхаб</a></li>
 <li>Родители</li>
 <li>Анастасия Михайловна</li>
+<li>Дарьяна</li>
+<li>Даная</li>
+<li>Паша</li>
+<li>Гриша</li>
 </ul>
 </div>
 <button id="hint-bookmark-tab" onclick="toggleHintBookmark()">📖<span class="hint-tab-tooltip">Подсказка о городе</span></button>
