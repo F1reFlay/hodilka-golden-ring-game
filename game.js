@@ -842,13 +842,32 @@ function animateStep(player, fromCellId, toCellId, duration, callback) {
     }
     const myToken = ++activeAnimationToken;
     drawStaticFrame(offscreenCtx, player.id);
+
+    // если на конечной клетке уже кто-то есть, заранее считаем смещение,
+    // куда именно приедет фишка - чтобы не было рывка "приехал в центр, потом скакнул в сторону"
+    const destOccupants = players.filter(p => p.currentCell === toCellId && p.id !== player.id);
+    const totalAtDest = destOccupants.length + 1;
+    let targetOffsetX = 0, targetOffsetY = 0;
+    if (totalAtDest > 1) {
+        const myIndex = destOccupants.length;
+        const angle = (myIndex * 2 * Math.PI) / totalAtDest;
+        targetOffsetX = Math.cos(angle) * 9;
+        targetOffsetY = Math.sin(angle) * 9;
+    }
+
     const startTime = performance.now();
+    let finished = false;
+    function finish() {
+        if (finished) return;
+        finished = true;
+        callback();
+    }
     function frame(now) {
-        if (myToken !== activeAnimationToken) return; // новый ход начался - старую анимацию не продолжаем
+        if (myToken !== activeAnimationToken) { finish(); return; } // новый ход начался - визуально прерываем, но логику доводим до конца
         const t = Math.min((now - startTime) / duration, 1);
         const eased = t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
-        const x = from.x + (to.x - from.x) * eased;
-        const y = from.y + (to.y - from.y) * eased;
+        const x = from.x + (to.x + targetOffsetX - from.x) * eased;
+        const y = from.y + (to.y + targetOffsetY - from.y) * eased;
 
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         ctx.drawImage(offscreenCanvas, 0, 0);
@@ -860,7 +879,7 @@ function animateStep(player, fromCellId, toCellId, duration, callback) {
         if (t < 1) {
             requestAnimationFrame(frame);
         } else {
-            callback();
+            finish();
         }
     }
     requestAnimationFrame(frame);
