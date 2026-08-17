@@ -682,19 +682,26 @@ function startGame(totalPlayers, hasBots, customColors, customNames) {
     document.getElementById("gold-modal").style.display = "block";
 }
 
-function drawGame(animOverride) {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    
+const offscreenCanvas = document.createElement("canvas");
+offscreenCanvas.width = canvas.width;
+offscreenCanvas.height = canvas.height;
+const offscreenCtx = offscreenCanvas.getContext("2d");
+
+function drawStaticFrame(targetCtx, excludeId) {
+    targetCtx.clearRect(0, 0, canvas.width, canvas.height);
+
     if (mapLoadedSuccessfully && mapImage.complete && mapImage.naturalWidth > 0) {
-        ctx.drawImage(mapImage, 0, 0, canvas.width, canvas.height);
+        targetCtx.drawImage(mapImage, 0, 0, canvas.width, canvas.height);
     } else {
-        ctx.fillStyle = "#16181c"; ctx.fillRect(0, 0, canvas.width, canvas.height);
-        mapImage.addEventListener('load', () => { if (players.length > 0) drawGame(); }, { once: true });
+        targetCtx.fillStyle = "#16181c"; targetCtx.fillRect(0, 0, canvas.width, canvas.height);
+        if (targetCtx === ctx) {
+            mapImage.addEventListener('load', () => { if (players.length > 0) drawGame(); }, { once: true });
+        }
     }
-    
+
     const cellGroups = {};
     players.forEach(player => {
-        if (animOverride && player.id === animOverride.id) return;
+        if (excludeId !== undefined && player.id === excludeId) return;
         if (!cellGroups[player.currentCell]) { cellGroups[player.currentCell] = []; }
         cellGroups[player.currentCell].push(player);
     });
@@ -702,7 +709,7 @@ function drawGame(animOverride) {
     Object.keys(cellGroups).forEach(cellId => {
         const group = cellGroups[cellId];
         const cell = boardRoute[cellId];
-        
+
         if (cell) {
             group.forEach((player, index) => {
                 let offsetX = 0, offsetY = 0;
@@ -710,25 +717,18 @@ function drawGame(animOverride) {
                     const angle = (index * 2 * Math.PI) / group.length;
                     offsetX = Math.cos(angle) * 9; offsetY = Math.sin(angle) * 9;
                 }
-                ctx.beginPath();
-                ctx.arc(cell.x + offsetX, cell.y + offsetY, 8, 0, Math.PI * 2);
-                ctx.fillStyle = player.color; ctx.fill();
-                ctx.strokeStyle = "#ffffff"; ctx.lineWidth = 1.5; ctx.stroke();
-                ctx.closePath();
+                targetCtx.beginPath();
+                targetCtx.arc(cell.x + offsetX, cell.y + offsetY, 8, 0, Math.PI * 2);
+                targetCtx.fillStyle = player.color; targetCtx.fill();
+                targetCtx.strokeStyle = "#ffffff"; targetCtx.lineWidth = 1.5; targetCtx.stroke();
+                targetCtx.closePath();
             });
         }
     });
+}
 
-    if (animOverride) {
-        const movingPlayer = players.find(p => p.id === animOverride.id);
-        if (movingPlayer) {
-            ctx.beginPath();
-            ctx.arc(animOverride.x, animOverride.y, 8, 0, Math.PI * 2);
-            ctx.fillStyle = movingPlayer.color; ctx.fill();
-            ctx.strokeStyle = "#ffffff"; ctx.lineWidth = 1.5; ctx.stroke();
-            ctx.closePath();
-        }
-    }
+function drawGame() {
+    drawStaticFrame(ctx);
 }
 
 // ==========================================
@@ -841,6 +841,7 @@ function animateStep(player, fromCellId, toCellId, duration, callback) {
         return;
     }
     const myToken = ++activeAnimationToken;
+    drawStaticFrame(offscreenCtx, player.id);
     const startTime = performance.now();
     function frame(now) {
         if (myToken !== activeAnimationToken) return; // новый ход начался - старую анимацию не продолжаем
@@ -848,7 +849,14 @@ function animateStep(player, fromCellId, toCellId, duration, callback) {
         const eased = t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
         const x = from.x + (to.x - from.x) * eased;
         const y = from.y + (to.y - from.y) * eased;
-        drawGame({ id: player.id, x: x, y: y });
+
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.drawImage(offscreenCanvas, 0, 0);
+        ctx.beginPath();
+        ctx.arc(x, y, 8, 0, Math.PI * 2);
+        ctx.fillStyle = player.color; ctx.fill();
+        ctx.strokeStyle = "#ffffff"; ctx.lineWidth = 1.5; ctx.stroke();
+        ctx.closePath();
         if (t < 1) {
             requestAnimationFrame(frame);
         } else {
