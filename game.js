@@ -872,7 +872,7 @@ function moveStepByStep(player, stepsLeft, totalRoll, isFirstStep) {
         return;
     }
     
-    const goesFork = Math.random() < 0.5;
+    const goesFork = isFirstStep;
     const nextCellId = getNextCellId(player.currentCell, goesFork);
     
     if (nextCellId === null) {
