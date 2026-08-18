@@ -1,6 +1,9 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@700;900&display=swap" rel="stylesheet">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="color-scheme" content="dark">
@@ -24,13 +27,12 @@ body { font-family: sans-serif; background: #111213; color: #f1f2f3; margin: 0; 
 .side-indicator { font-size: 14px; color: #9aa3b2; }
 .side-indicator b { color: #50fa7b; }
 
-#deck-column { display: flex; flex-direction: column; gap: 14px; min-width: 220px; }
-.deck-card { background: #16181c; border: 1px solid #2e3440; border-radius: 16px; padding: 16px 20px; display: flex; align-items: center; gap: 14px; box-shadow: 0 8px 20px rgba(0,0,0,0.4); transition: border-color 0.2s ease, transform 0.2s ease; }
-.deck-card:hover { border-color: #a482ff; transform: translateX(4px); }
-.deck-icon { font-size: 42px; line-height: 1; flex-shrink: 0; }
-.deck-text { text-align: left; }
-.deck-label { font-size: 11px; color: #9aa3b2; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 4px; }
-.deck-name { font-size: 22px; font-weight: bold; color: #8be9fd; }
+#deck-column { display: flex; flex-direction: column; gap: 16px; }
+.deck-card { background: #16181c; border: 2px solid #2e3440; border-radius: 18px; width: 220px; height: 150px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; box-shadow: 0 8px 20px rgba(0,0,0,0.4); transition: border-color 0.2s ease, transform 0.2s ease; box-sizing: border-box; }
+.deck-card:hover { border-color: #a482ff; transform: translateY(-4px); }
+.deck-icon { font-size: 46px; line-height: 1; }
+.deck-label { font-size: 11px; color: #9aa3b2; text-transform: uppercase; letter-spacing: 1px; }
+.deck-name { font-size: 24px; font-weight: bold; color: #8be9fd; }
 .deck-hint { font-size: 12px; color: #6272a4; text-align: center; line-height: 1.5; max-width: 220px; }
 
 .stub-note { max-width: 560px; text-align: center; font-size: 13px; color: #6272a4; margin-top: 14px; line-height: 1.6; }
@@ -45,8 +47,7 @@ body { font-family: sans-serif; background: #111213; color: #f1f2f3; margin: 0; 
 
 @media (max-width: 760px) {
   #board-canvas { max-width: 92vw; height: auto; }
-  #deck-column { flex-direction: row; width: 92vw; }
-  .deck-card { flex: 1; }
+  #deck-column { flex-direction: row; width: 92vw; justify-content: center; flex-wrap: wrap; }
 }
 </style>
 </head>
@@ -66,17 +67,13 @@ body { font-family: sans-serif; background: #111213; color: #f1f2f3; margin: 0; 
   <div id="deck-column">
     <div class="deck-card">
       <span class="deck-icon">❓</span>
-      <div class="deck-text">
-        <div class="deck-label">Колода</div>
-        <div class="deck-name">Шанс</div>
-      </div>
+      <div class="deck-label">Колода</div>
+      <div class="deck-name">Шанс</div>
     </div>
     <div class="deck-card">
       <span class="deck-icon">🏦</span>
-      <div class="deck-text">
-        <div class="deck-label">Колода</div>
-        <div class="deck-name">Казна</div>
-      </div>
+      <div class="deck-label">Колода</div>
+      <div class="deck-name">Казна</div>
     </div>
     <div class="deck-hint">Колоды всегда сбоку от стола — не вращаются вместе с доской, их видно с любой стороны</div>
   </div>
