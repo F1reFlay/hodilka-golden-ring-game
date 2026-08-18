@@ -42,8 +42,8 @@ footer { margin-top: auto; padding-top: 40px; display: flex; flex-direction: col
 .btn-transparent { background: transparent; color: #9aa3b2; border: 2px solid transparent; padding: 10px 20px; border-radius: 14px; cursor: pointer; font-weight: bold; font-size: 13px; letter-spacing: 0.5px; transition: border-color 0.2s ease, background 0.2s ease, color 0.2s ease; font-family: inherit; }
 .btn-transparent:hover { border-color: #a482ff; background: rgba(164,130,255,0.08); color: #f1f2f3; }
 
-#creators-panel { position: fixed; left: 0; bottom: 0; width: min(320px, 92vw); max-height: 60%; background: #1c1f26; border-top: 4px solid #a482ff; box-shadow: 0 -10px 30px rgba(0,0,0,0.6); padding: 24px 20px; box-sizing: border-box; z-index: 1300; display: flex; flex-direction: column; transform: translateY(100%); transition: transform 0.35s ease; border-radius: 0 20px 0 0; }
-#creators-panel.open { transform: translateY(0); }
+#creators-panel { position: fixed; left: 50%; bottom: 0; width: min(360px, 92vw); max-height: 60%; background: #1c1f26; border-top: 4px solid #a482ff; border-left: 1px solid #2e3440; border-right: 1px solid #2e3440; box-shadow: 0 -10px 30px rgba(0,0,0,0.6); padding: 24px 20px; box-sizing: border-box; z-index: 1300; display: flex; flex-direction: column; transform: translateX(-50%) translateY(100%); transition: transform 0.35s ease; border-radius: 20px 20px 0 0; }
+#creators-panel.open { transform: translateX(-50%) translateY(0); }
 .settings-panel-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; border-bottom: 2px solid #3b4252; padding-bottom: 12px; }
 .settings-panel-title { font-size: 18px; font-weight: bold; color: #a482ff; letter-spacing: 1px; }
 .btn-icon-close { background: transparent; border: none; color: #f1f2f3; font-size: 20px; cursor: pointer; width: 36px; height: 36px; min-width: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; transition: background 0.2s ease; line-height: 1; }
