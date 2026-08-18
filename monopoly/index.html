@@ -1,1 +1,101 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="color-scheme" content="dark">
+<title>Монополия</title>
+<style>
+:root { color-scheme: dark; }
+body { font-family: sans-serif; background: #111213; color: #f1f2f3; margin: 0; padding: 20px; display: flex; flex-direction: column; align-items: center; }
+.title-container { display: flex; flex-direction: column; align-items: center; margin-top: 10px; margin-bottom: 20px; background: #16181c; padding: 10px 40px; border-radius: 20px; border: 1px solid #2e3440; box-shadow: inset 0 0 15px rgba(164, 130, 255, 0.1), 0 4px 15px rgba(0,0,0,0.4); text-align: center; }
+.small-subtitle { font-size: 12px; font-weight: bold; color: #cbd5e1; text-transform: uppercase; letter-spacing: 4px; margin-bottom: 4px; }
+.game-title { font-size: 32px; font-weight: bold; color: #a482ff; text-transform: uppercase; letter-spacing: 2px; margin: 0; text-shadow: 0 0 10px rgba(164, 130, 255, 0.6), 0 0 20px rgba(164, 130, 255, 0.3); }
 
+.back-link { position: fixed; top: 20px; left: 20px; color: #9aa3b2; text-decoration: none; font-size: 14px; font-weight: bold; background: rgba(35,40,48,0.85); padding: 10px 16px; border-radius: 999px; transition: color 0.2s ease, background 0.2s ease; }
+.back-link:hover { color: #f1f2f3; background: rgba(98,102,112,0.85); }
+
+#game-layout { display: flex; align-items: flex-start; gap: 24px; flex-wrap: wrap; justify-content: center; }
+
+#board-wrap { display: flex; flex-direction: column; align-items: center; gap: 16px; }
+#board-canvas { border: 4px solid #2e3440; background: #16181c; border-radius: 16px; box-shadow: 0 10px 25px rgba(0,0,0,0.5); }
+
+.rotate-controls { display: flex; gap: 12px; align-items: center; }
+.btn-rotate { background: #232830; color: #fff; border: 2px solid #3b4252; border-radius: 14px; padding: 12px 22px; font-size: 14px; font-weight: bold; cursor: pointer; transition: all 0.2s ease; }
+.btn-rotate:hover { border-color: #a482ff; background: #1c1f26; transform: translateY(-2px); }
+.btn-rotate:active { transform: translateY(0) scale(0.96); }
+
+.side-indicator { font-size: 14px; color: #9aa3b2; }
+.side-indicator b { color: #50fa7b; }
+
+#deck-column { display: flex; flex-direction: column; gap: 14px; min-width: 150px; }
+.deck-card { background: #16181c; border: 1px solid #2e3440; border-radius: 16px; padding: 18px 14px; text-align: center; box-shadow: 0 8px 20px rgba(0,0,0,0.4); }
+.deck-label { font-size: 11px; color: #9aa3b2; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px; }
+.deck-name { font-size: 16px; font-weight: bold; color: #8be9fd; }
+.deck-icon { font-size: 26px; display: block; margin-bottom: 6px; }
+.deck-hint { font-size: 12px; color: #6272a4; text-align: center; line-height: 1.5; max-width: 150px; }
+
+.stub-note { max-width: 560px; text-align: center; font-size: 13px; color: #6272a4; margin-top: 14px; line-height: 1.6; }
+
+.modal-layout { display: flex; position: fixed; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.7); z-index: 1000; align-items: center; justify-content: center; }
+.disclaimer-box { background: #1c1f26; border: 2px solid #f1c40f; border-radius: 20px; padding: 32px 28px; max-width: 420px; text-align: center; box-shadow: 0 15px 40px rgba(0,0,0,0.7); }
+.disclaimer-icon { font-size: 40px; margin-bottom: 14px; }
+.disclaimer-title { font-size: 18px; font-weight: bold; color: #f1c40f; margin-bottom: 12px; }
+.disclaimer-text { font-size: 14px; color: #cbd5e1; line-height: 1.6; margin-bottom: 22px; }
+.btn-close-modal { display: block; padding: 14px 20px; font-size: 15px; background: #f1c40f; color: #111213; border: none; border-radius: 16px; font-weight: bold; cursor: pointer; width: 100%; transition: all 0.2s ease; }
+.btn-close-modal:hover { background: #d4ac0d; transform: translateY(-2px); }
+
+@media (max-width: 760px) {
+  #board-canvas { max-width: 92vw; height: auto; }
+  #deck-column { flex-direction: row; width: 92vw; }
+  .deck-card { flex: 1; }
+}
+</style>
+</head>
+<body>
+
+<a class="back-link" href="/index.html">← Игротека</a>
+
+<div class="title-container">
+<div class="small-subtitle">В разработке</div>
+<div class="game-title">Монополия</div>
+</div>
+
+<div id="game-layout">
+  <div id="board-wrap">
+    <canvas id="board-canvas" width="660" height="660"></canvas>
+    <div class="rotate-controls">
+      <button class="btn-rotate" onclick="rotateBoard()">↻ Повернуть доску</button>
+      <div class="side-indicator">Сторона: <b id="active-side-label">1</b>/4</div>
+    </div>
+  </div>
+
+  <div id="deck-column">
+    <div class="deck-card">
+      <span class="deck-icon">❓</span>
+      <div class="deck-label">Колода</div>
+      <div class="deck-name">Шанс</div>
+    </div>
+    <div class="deck-card">
+      <span class="deck-icon">🏦</span>
+      <div class="deck-label">Колода</div>
+      <div class="deck-name">Казна</div>
+    </div>
+    <div class="deck-hint">Колоды всегда сбоку от стола — не вращаются вместе с доской, их видно с любой стороны</div>
+  </div>
+</div>
+
+<div class="stub-note">Ранний каркас доски. Дальше по плану: деньги, покупка улиц, дома/отели и содержимое карт «Шанс»/«Казна».</div>
+
+<div id="disclaimer-modal" class="modal-layout">
+  <div class="disclaimer-box">
+    <div class="disclaimer-icon">💻</div>
+    <div class="disclaimer-title">Лучше играть с компьютера</div>
+    <div class="disclaimer-text">Тут большая доска с мелкими деталями и поворотом на 90°. На телефоне будет тесно и неудобно. Рекомендуем открыть игру на компьютере или ноутбуке.</div>
+    <button class="btn-close-modal" onclick="closeDisclaimer()">Понял, продолжить</button>
+  </div>
+</div>
+
+<script src="game.js"></script>
+</body>
+</html>
