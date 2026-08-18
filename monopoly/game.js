@@ -150,7 +150,7 @@ function drawBoard() {
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
     ctx.font = "bold 22px sans-serif";
-    ctx.fillText("МЕТРОПОЛИЯ", cx, cy - 10);
+    ctx.fillText("МОНОПОЛИЯ", cx, cy - 10);
     ctx.font = "13px sans-serif";
     ctx.fillStyle = "#9aa3b2";
     ctx.fillText("экономическая игра", cx, cy + 16);
