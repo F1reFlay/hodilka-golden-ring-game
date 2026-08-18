@@ -1,17 +1,14 @@
-// ==========================================
-// МОНОПОЛИЯ ЧАСТЬ 1: ДАННЫЕ ПОЛЯ
-// ==========================================
 const canvas = document.getElementById("board-canvas");
 const ctx = canvas.getContext("2d");
 
-const BOARD = 760;               // логический размер доски (до масштабирования канваса)
-const D = 105;                   // глубина клетки к центру (и размер угла)
-const W = (BOARD - 2 * D) / 9;   // ширина обычной клетки вдоль края
-const GAP = 4;                   // зазор между клетками, чтобы не слипались
+const BOARD = 760;
+const D = 105;
+const W = (BOARD - 2 * D) / 9;
+const GAP = 4;
 
 const groupColors = {
     brown:  "#D85A30",
-    trio:   "#378ADD", // район Черняховского/Усьевича/Планетной
+    trio:   "#378ADD",
     pink:   "#D4537E",
     orange: "#EF9F27",
     red:    "#E24B4A",
@@ -29,7 +26,6 @@ const specialBg   = "#2C2C2A";
 const specialText = "#F1EFE8";
 const innerBg     = "#0d0e10";
 
-// 40 клеток по кругу. Цена - заготовка, дойдём до денег - используем.
 const tiles = [
     { name: "СТАРТ", group: "corner", emoji: "🚀" },
     { name: "Полевая", group: "brown", price: 60 },
@@ -73,8 +69,6 @@ const tiles = [
     { name: "Кутузовский", group: "blue", price: 400 }
 ];
 
-// пиксельный прямоугольник клетки (без зазора): угловые квадратные (D x D),
-// обычные вытянуты к центру (глубина D больше ширины W вдоль края)
 function getTileRectRaw(index) {
     const i = ((index % 40) + 40) % 40;
     if (i === 0)  return { x: 0, y: BOARD - D, w: D, h: D, corner: true };
@@ -87,7 +81,6 @@ function getTileRectRaw(index) {
     return { x: 0, y: D + (i - 31) * W, w: D, h: W, side: "left" };
 }
 
-// та же клетка, но с зазором со всех сторон - чтобы соседние клетки не слипались визуально
 function getTileRect(index) {
     const raw = getTileRectRaw(index);
     return { x: raw.x + GAP / 2, y: raw.y + GAP / 2, w: raw.w - GAP, h: raw.h - GAP, side: raw.side, corner: raw.corner };
@@ -121,19 +114,13 @@ function wrapText(text, x, y, maxWidth, lineHeight) {
     lines.forEach((line, idx) => ctx.fillText(line, x, startY + idx * lineHeight));
 }
 
-// у каждой стороны своя фиксированная ориентация текста - "верх" текста всегда
-// смотрит к центру поля, как на настоящей доске. Именно поэтому нужен общий
-// поворот доски - чтобы читаемая сторона оказалась к вам ближе.
 function getSideRotation(side) {
     if (side === "right") return -Math.PI / 2;
     if (side === "top") return Math.PI;
     if (side === "left") return Math.PI / 2;
-    return 0; // bottom и по умолчанию
+    return 0;
 }
 
-// ==========================================
-// МОНОПОЛИЯ ЧАСТЬ 2: ПЛАВНЫЙ ПОВОРОТ И ОТРИСОВКА
-// ==========================================
 const SCALE = canvas.width / BOARD;
 let currentAngle = 0;
 let targetAngle = 0;
@@ -167,7 +154,6 @@ function drawBoard() {
     ctx.translate(-cx, -cy);
     ctx.scale(SCALE, SCALE);
 
-    // внутренняя область поля
     roundRect(D * 0.15, D * 0.15, BOARD - D * 0.3, BOARD - D * 0.3, 18);
     ctx.fillStyle = innerBg;
     ctx.fill();
@@ -177,7 +163,6 @@ function drawBoard() {
         const r = getTileRect(i);
         const isColorGroup = !!groupColors[tile.group];
 
-        // сама клетка, скруглённая, с зазором от соседних
         roundRect(r.x, r.y, r.w, r.h, 10);
         ctx.fillStyle = tile.corner ? cornerBg : (tile.group === "special" ? specialBg : tileBg);
         ctx.fill();
@@ -185,15 +170,16 @@ function drawBoard() {
         ctx.lineWidth = 1.2;
         ctx.stroke();
 
-        // тонкая цветная плашка со свечением у внешнего края - НЕ вся клетка в цвете
+        // тонкая, но ДЛИННАЯ цветная плашка со свечением у внешнего края
         if (isColorGroup) {
-            const thin = (r.side === "bottom" || r.side === "top") ? r.h * 0.14 : r.w * 0.14;
-            const pad = thin;
+            const thin = (r.side === "bottom" || r.side === "top") ? r.h * 0.16 : r.w * 0.16;
+            const edgePad = thin * 0.5;
+            const lengthPad = 5; // маленький отступ по длине - плашка почти во всю ширину клетки
             let sx, sy, sw, sh;
-            if (r.side === "bottom") { sw = r.w - pad * 2; sh = thin; sx = r.x + pad; sy = r.y + r.h - sh - pad * 0.5; }
-            else if (r.side === "top") { sw = r.w - pad * 2; sh = thin; sx = r.x + pad; sy = r.y + pad * 0.5; }
-            else if (r.side === "left") { sh = r.h - pad * 2; sw = thin; sx = r.x + pad * 0.5; sy = r.y + pad; }
-            else { sh = r.h - pad * 2; sw = thin; sx = r.x + r.w - sw - pad * 0.5; sy = r.y + pad; }
+            if (r.side === "bottom") { sw = r.w - lengthPad * 2; sh = thin; sx = r.x + lengthPad; sy = r.y + r.h - sh - edgePad; }
+            else if (r.side === "top") { sw = r.w - lengthPad * 2; sh = thin; sx = r.x + lengthPad; sy = r.y + edgePad; }
+            else if (r.side === "left") { sh = r.h - lengthPad * 2; sw = thin; sx = r.x + edgePad; sy = r.y + lengthPad; }
+            else { sh = r.h - lengthPad * 2; sw = thin; sx = r.x + r.w - sw - edgePad; sy = r.y + lengthPad; }
 
             ctx.save();
             ctx.shadowColor = groupColors[tile.group];
@@ -204,7 +190,7 @@ function drawBoard() {
             ctx.restore();
         }
 
-        // текст и эмодзи - развёрнуты по своей стороне (фиксированно, не крутятся при повороте доски отдельно)
+        // текст развёрнут по своей стороне; эмодзи и подпись разведены дальше друг от друга - не наезжают
         const along = (r.side === "left" || r.side === "right") ? r.h : r.w;
         ctx.save();
         ctx.translate(r.x + r.w / 2, r.y + r.h / 2);
@@ -212,34 +198,31 @@ function drawBoard() {
         ctx.textAlign = "center";
         ctx.textBaseline = "middle";
         ctx.fillStyle = tile.corner ? cornerText : (tile.group === "special" ? specialText : tileText);
-        ctx.font = tile.corner ? "800 14px sans-serif" : "700 12px sans-serif";
-        wrapText(tile.name, 0, tile.corner ? 8 : (isColorGroup ? -3 : 0), along - 12, 13);
+        ctx.font = tile.corner ? "700 12px 'Unbounded', sans-serif" : "600 11px sans-serif";
+        wrapText(tile.name, 0, tile.corner ? 14 : 4, along - 12, 12);
         if (tile.emoji) {
-            ctx.font = (tile.corner ? 24 : 15) + "px sans-serif";
-            ctx.fillText(tile.emoji, 0, tile.corner ? -18 : -16);
+            ctx.font = (tile.corner ? 22 : 13) + "px sans-serif";
+            ctx.fillText(tile.emoji, 0, tile.corner ? -24 : -22);
         }
         ctx.restore();
     }
 
     ctx.restore();
 
-    // центр поля - статичный, НИКОГДА не поворачивается, читается с любой стороны стола
+    // центр поля - статичный, шрифт Unbounded, свечение
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
     ctx.shadowColor = "rgba(164,130,255,0.7)";
     ctx.shadowBlur = 24;
     ctx.fillStyle = "#c9b8ff";
-    ctx.font = "800 36px sans-serif";
+    ctx.font = "900 40px 'Unbounded', sans-serif";
     ctx.fillText("МОНОПОЛИЯ", cx, cy - 12);
     ctx.shadowBlur = 0;
-    ctx.font = "500 16px sans-serif";
+    ctx.font = "500 15px sans-serif";
     ctx.fillStyle = "#9aa3b2";
-    ctx.fillText("экономическая игра", cx, cy + 22);
+    ctx.fillText("экономическая игра", cx, cy + 24);
 }
 
-// ==========================================
-// МОНОПОЛИЯ ЧАСТЬ 3: ДИСКЛЕЙМЕР И СТАРТ
-// ==========================================
 function closeDisclaimer() {
     document.getElementById("disclaimer-modal").style.display = "none";
     try { localStorage.setItem("monopolyDisclaimerSeen", "1"); } catch (e) {}
@@ -254,4 +237,5 @@ function initDisclaimer() {
 }
 
 initDisclaimer();
+document.fonts.ready.then(drawBoard);
 drawBoard();
