@@ -4,135 +4,580 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="color-scheme" content="dark">
-<title>Игротека</title>
+<title>Nevanda — вход</title>
 <style>
-:root { color-scheme: dark; }
-body { font-family: sans-serif; background: #111213; color: #f1f2f3; margin: 0; padding: 20px; display: flex; flex-direction: column; align-items: center; min-height: 100vh; box-sizing: border-box; }
-.title-container { display: flex; flex-direction: column; align-items: center; margin-top: 30px; margin-bottom: 40px; background: #16181c; padding: 14px 50px; border-radius: 20px; border: 1px solid #2e3440; box-shadow: inset 0 0 15px rgba(164, 130, 255, 0.1), 0 4px 15px rgba(0,0,0,0.4); text-align: center; }
-.small-subtitle { font-size: 12px; font-weight: bold; color: #cbd5e1; text-transform: uppercase; letter-spacing: 4px; margin-bottom: 4px; }
-.hub-title { font-size: 34px; font-weight: bold; color: #a482ff; text-transform: uppercase; letter-spacing: 2px; margin: 0; text-shadow: 0 0 10px rgba(164, 130, 255, 0.6), 0 0 20px rgba(164, 130, 255, 0.3); }
+  :root { color-scheme: dark; }
+  * { box-sizing: border-box; }
 
-.game-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 24px; width: 100%; max-width: 820px; }
+  body {
+    margin: 0; min-height: 100vh; background: #111213; color: #f1f2f3;
+    font-family: sans-serif; display: flex; align-items: center; justify-content: center; padding: 20px;
+  }
 
-.game-card { position: relative; background: #16181c; border: 2px solid #2e3440; border-radius: 20px; padding: 28px 22px; display: flex; flex-direction: column; align-items: center; text-align: center; text-decoration: none; color: inherit; transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease; overflow: hidden; }
-.game-card:hover { transform: translateY(-4px); border-color: #a482ff; box-shadow: 0 10px 30px rgba(164,130,255,0.25); }
-.game-card:active { transform: translateY(-1px) scale(0.98); }
+  .panel {
+    width: 100%; max-width: 420px; background: #16181c; padding: 30px 34px;
+    border-radius: 20px; border: 1px solid #2e3440;
+    box-shadow: inset 0 0 15px rgba(164, 130, 255, 0.1), 0 4px 15px rgba(0,0,0,0.4);
+    transition: max-width 0.2s;
+  }
+  .panel.wide { max-width: 640px; }
 
-.game-card-icon { font-size: 46px; margin-bottom: 14px; }
-.game-card-name { font-size: 19px; font-weight: bold; color: #f1f2f3; margin-bottom: 6px; }
-.game-card-desc { font-size: 13px; color: #9aa3b2; line-height: 1.5; }
+  .header { text-align: center; margin-bottom: 26px; }
+  .eyebrow { font-size: 12px; font-weight: bold; color: #cbd5e1; text-transform: uppercase; letter-spacing: 4px; margin-bottom: 6px; }
+  h1 {
+    font-size: 26px; font-weight: bold; color: #a482ff; text-transform: uppercase;
+    letter-spacing: 2px; margin: 0; text-shadow: 0 0 10px rgba(164, 130, 255, 0.5);
+  }
 
-.game-card.ready { border-color: #3b4252; }
-.game-card.ready .game-card-icon { color: #50fa7b; }
+  .status-line { text-align: center; font-size: 12px; color: #6b7280; margin-top: 8px; }
+  .status-line .dot { display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: #4a3d6b; margin-right: 6px; vertical-align: middle; }
+  .status-line .dot.live { background: #50fa7b; box-shadow: 0 0 6px rgba(80,250,123,0.7); }
 
-.game-card.coming { cursor: default; opacity: 0.55; }
-.game-card.coming:hover { transform: none; border-color: #2e3440; box-shadow: none; }
-.badge { position: absolute; top: 14px; right: 14px; font-size: 10px; font-weight: bold; letter-spacing: 1px; text-transform: uppercase; padding: 4px 10px; border-radius: 999px; }
-.badge-ready { background: rgba(80,250,123,0.15); color: #50fa7b; border: 1px solid rgba(80,250,123,0.4); }
-.badge-progress { background: rgba(241,196,15,0.15); color: #f1c40f; border: 1px solid rgba(241,196,15,0.4); }
-.badge-soon { background: rgba(139,233,253,0.1); color: #8be9fd; border: 1px solid rgba(139,233,253,0.3); }
+  .tabs { display: flex; background: #111213; border: 1px solid #2e3440; border-radius: 12px; overflow: hidden; margin-bottom: 20px; }
+  .tabs button {
+    flex: 1; padding: 10px 0; background: transparent; border: none; color: #8b8f98;
+    font-family: sans-serif; font-size: 13px; font-weight: 600; cursor: pointer; transition: background 0.15s, color 0.15s;
+  }
+  .tabs button.active { background: rgba(164, 130, 255, 0.15); color: #a482ff; }
 
-.add-card { border-style: dashed; opacity: 0.4; cursor: default; }
-.add-card:hover { transform: none; border-color: #2e3440; box-shadow: none; }
-.add-card .game-card-icon { color: #6272a4; }
+  label { display: block; font-size: 12px; color: #8b8f98; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 1px; }
 
-footer { margin-top: auto; padding-top: 40px; display: flex; flex-direction: column; align-items: center; gap: 10px; }
-.footer-credit { font-size: 12px; color: #6272a4; text-align: center; }
+  input, textarea {
+    width: 100%; background: #111213; border: 1px solid #2e3440; color: #f1f2f3;
+    font-family: sans-serif; font-size: 14px; padding: 11px 12px; border-radius: 10px; margin-bottom: 16px;
+  }
+  input:focus, textarea:focus { outline: none; border-color: #a482ff; box-shadow: 0 0 0 3px rgba(164, 130, 255, 0.15); }
+  textarea { min-height: 90px; resize: vertical; font-size: 13px; }
 
-.btn-transparent { background: transparent; color: #9aa3b2; border: 2px solid transparent; padding: 10px 20px; border-radius: 14px; cursor: pointer; font-weight: bold; font-size: 13px; letter-spacing: 0.5px; transition: border-color 0.2s ease, background 0.2s ease, color 0.2s ease; font-family: inherit; }
-.btn-transparent:hover { border-color: #a482ff; background: rgba(164,130,255,0.08); color: #f1f2f3; }
+  button.submit {
+    width: 100%; background: #50fa7b; color: #0d1a0f; border: none; font-family: sans-serif;
+    font-weight: 700; font-size: 15px; padding: 12px 0; border-radius: 12px; cursor: pointer;
+    box-shadow: 0 4px 14px rgba(80, 250, 123, 0.25); transition: filter 0.15s, transform 0.1s;
+  }
+  button.submit:hover { filter: brightness(1.06); }
+  button.submit:active { transform: scale(0.97); }
 
-#creators-panel { position: fixed; left: 50%; bottom: 0; width: min(360px, 92vw); max-height: 60%; background: #1c1f26; border-top: 4px solid #a482ff; border-left: 1px solid #2e3440; border-right: 1px solid #2e3440; box-shadow: 0 -10px 30px rgba(0,0,0,0.6); padding: 24px 20px; box-sizing: border-box; z-index: 1300; display: flex; flex-direction: column; transform: translateX(-50%) translateY(100%); transition: transform 0.35s ease; border-radius: 20px 20px 0 0; }
-#creators-panel.open { transform: translateX(-50%) translateY(0); }
-.settings-panel-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; border-bottom: 2px solid #3b4252; padding-bottom: 12px; }
-.settings-panel-title { font-size: 18px; font-weight: bold; color: #a482ff; letter-spacing: 1px; }
-.btn-icon-close { background: transparent; border: none; color: #f1f2f3; font-size: 20px; cursor: pointer; width: 36px; height: 36px; min-width: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; transition: background 0.2s ease; line-height: 1; }
-.btn-icon-close:hover { background: rgba(255,255,255,0.08); }
-.creators-list { list-style: none; margin: 14px 0 0; padding: 0; display: flex; flex-direction: column; gap: 14px; overflow-y: auto; }
-.creators-list li { position: relative; padding-left: 20px; font-size: 15px; color: #e5e9f0; }
-.creators-list li::before { content: "•"; position: absolute; left: 0; color: #a482ff; font-weight: bold; }
-.creators-list a { color: #8be9fd; text-decoration: none; }
-.creators-list a:hover { text-decoration: underline; }
+  .msg { margin-top: 14px; font-size: 13px; line-height: 1.5; white-space: pre-wrap; word-break: break-all; text-align: center; }
+  .msg.error { color: #ff8a72; }
+  .msg.ok { color: #50fa7b; }
 
-@media (max-width: 600px) {
-  .hub-title { font-size: 24px; }
-  .title-container { padding: 12px 28px; }
-}
+  .view { display: none; }
+  .view.active { display: block; }
+  .form { display: none; }
+  .form.active { display: block; }
+
+  .session-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px; }
+  .session-row .who { font-size: 14px; color: #f1f2f3; }
+  .session-row .who span { color: #a482ff; font-weight: 700; }
+  .logout {
+    background: none; border: 1px solid #2e3440; color: #8b8f98; font-family: sans-serif;
+    font-size: 11px; padding: 6px 12px; border-radius: 8px; cursor: pointer;
+  }
+  .logout:hover { color: #f1f2f3; border-color: #4a4f5a; }
+
+  .search-row { position: relative; margin-bottom: 14px; }
+  .search-row input { margin-bottom: 0; padding-left: 34px; }
+  .search-row .icon { position: absolute; left: 11px; top: 50%; transform: translateY(-50%); font-size: 13px; color: #6b7280; }
+  .item-count-label { font-size: 11px; color: #6b7280; margin-bottom: 10px; text-align: right; }
+
+  .item-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(84px, 1fr));
+    gap: 8px;
+    margin-bottom: 16px;
+    max-height: 380px;
+    overflow-y: auto;
+    padding: 6px 4px;
+  }
+  .item-slot {
+    position: relative;
+    background: #111213;
+    border: 1px solid #2e3440;
+    border-radius: 8px;
+    padding: 10px 4px 8px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    cursor: pointer;
+    transition: border-color 0.12s, transform 0.08s, background 0.12s;
+  }
+  .item-slot:hover { border-color: #a482ff; transform: translateY(-2px); background: #191b21; }
+  .item-slot .icon-wrap { position: relative; font-size: 26px; line-height: 1; margin-bottom: 6px; }
+  .item-slot .count-badge {
+    position: absolute; top: -8px; right: -14px;
+    background: #1c1e24; border: 1px solid #2e3440; border-radius: 8px;
+    padding: 1px 5px; font-size: 9.5px; font-weight: 700; color: #f1f2f3;
+  }
+  .item-slot .name {
+    font-size: 9.5px; color: #9ca3af; text-align: center; line-height: 1.25;
+    display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+    overflow: hidden; width: 100%;
+  }
+  .item-slot .tooltip {
+    position: absolute; bottom: calc(100% + 6px); left: 50%; transform: translateX(-50%);
+    background: #0a0a0b; border: 1px solid #2e3440; border-radius: 6px;
+    padding: 6px 10px; font-size: 10.5px; white-space: nowrap; color: #cbd5e1;
+    opacity: 0; pointer-events: none; transition: opacity 0.12s; z-index: 5;
+  }
+  .item-slot .tooltip .id { color: #6b7280; }
+  .item-slot:hover .tooltip { opacity: 1; }
+
+  .empty-state { text-align: center; color: #6b7280; font-size: 13px; padding: 30px 0; }
+
+  .ghost-btn {
+    width: 100%; background: transparent; border: 1px solid #2e3440; color: #cbd5e1;
+    font-family: sans-serif; font-size: 13px; font-weight: 600; padding: 9px 0;
+    border-radius: 10px; cursor: pointer; margin-bottom: 14px;
+  }
+  .ghost-btn:hover { border-color: #a482ff; color: #a482ff; }
+
+  .advanced-toggle {
+    display: block; text-align: center; font-size: 11px; color: #4a4f5a;
+    background: none; border: none; cursor: pointer; width: 100%; margin-bottom: 6px; font-family: sans-serif;
+  }
+  .advanced-toggle:hover { color: #8b8f98; }
+  .advanced-box { display: none; }
+  .advanced-box.show { display: block; }
+
+  .requests-section { margin-top: 18px; padding-top: 16px; border-top: 1px dashed #2e3440; }
+  .requests-title { font-size: 11px; color: #8b8f98; text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 10px; }
+  .request-row {
+    display: flex; justify-content: space-between; align-items: center;
+    background: #111213; border: 1px solid #2e3440; border-radius: 8px;
+    padding: 8px 10px; margin-bottom: 6px; font-size: 12.5px;
+  }
+  .request-row .who { color: #6b7280; font-size: 11px; }
+  .request-cancel {
+    background: none; border: none; color: #6b7280; font-size: 14px; cursor: pointer; padding: 0 4px;
+  }
+  .request-cancel:hover { color: #ff8a72; }
+
+  .admin-section { display: none; margin-top: 22px; padding-top: 20px; border-top: 1px dashed #2e3440; }
+  .admin-section.show { display: block; }
+  .admin-title { font-size: 12px; color: #a482ff; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 14px; text-align: center; }
+
+  .invite-result {
+    background: #111213; border: 1px solid #50fa7b; border-radius: 10px; padding: 12px;
+    margin-top: 12px; font-size: 13px; text-align: center; display: none;
+  }
+  .invite-result.show { display: block; }
+  .invite-result .username { color: #50fa7b; font-weight: 700; font-size: 16px; }
+
+  /* --- модалка запроса --- */
+  .modal-overlay {
+    display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6);
+    align-items: center; justify-content: center; z-index: 50; padding: 20px;
+  }
+  .modal-overlay.show { display: flex; }
+  .modal-card {
+    width: 100%; max-width: 280px; background: #16181c; border: 1px solid #2e3440;
+    border-radius: 16px; padding: 24px; text-align: center;
+    box-shadow: inset 0 0 15px rgba(164, 130, 255, 0.1), 0 8px 30px rgba(0,0,0,0.5);
+  }
+  .modal-icon { font-size: 40px; margin-bottom: 8px; }
+  .modal-name { font-size: 15px; font-weight: 700; color: #f1f2f3; margin-bottom: 2px; }
+  .modal-stock { font-size: 12px; color: #6b7280; margin-bottom: 18px; }
 </style>
 </head>
 <body>
 
-<div class="title-container">
-<div class="small-subtitle">Игротека</div>
-<div class="hub-title">Выбери игру</div>
-</div>
+<div class="panel" id="mainPanel">
 
-<div class="game-grid">
+  <div id="authView" class="view active">
+    <div class="header">
+      <div class="eyebrow">Nevanda</div>
+      <h1>Вход</h1>
+      <div class="status-line"><span class="dot" id="statusDot"></span><span id="statusText">не подключено</span></div>
+    </div>
 
-  <a class="game-card ready" href="hodilka/index.html">
-    <span class="badge badge-ready">Готово</span>
-    <div class="game-card-icon">🗺️</div>
-    <div class="game-card-name">Золотое кольцо России</div>
-    <div class="game-card-desc">Ходилка-викторина по древним городам — бросай кубик, отвечай на вопросы, собирай очки.</div>
-  </a>
+    <div class="tabs">
+      <button id="tabLogin" class="active" onclick="switchTab('login')">Вход</button>
+      <button id="tabActivate" onclick="switchTab('activate')">Активация</button>
+    </div>
 
-  <a class="game-card ready" href="monopoly/index.html">
-    <span class="badge badge-progress">В разработке</span>
-    <div class="game-card-icon">🏠</div>
-    <div class="game-card-name">Монополия</div>
-    <div class="game-card-desc">Деньги считает игра, никто не жульничает. Пока базовая версия — докручиваем постепенно.</div>
-  </a>
+    <form id="loginForm" class="form active" onsubmit="return doLogin(event)">
+      <label for="loginUser">Логин</label>
+      <input id="loginUser" autocomplete="username" required>
+      <label for="loginPass">Пароль</label>
+      <input id="loginPass" type="password" autocomplete="current-password" required>
+      <button class="submit" type="submit">Войти</button>
+    </form>
 
-    <a class="game-card ready" href="nevanda/index.html">
-    <span class="badge badge-progress">В разработке</span>
-    <div class="game-card-icon">📦</div>
-    <div class="game-card-name">Nevanda</div>
-    <div class="game-card-desc">Панель управления складом и автоматизацией на сервере.</div>
-  </a>
+    <form id="activateForm" class="form" onsubmit="return doActivate(event)">
+      <label for="actUser">Логин, который вам дали</label>
+      <input id="actUser" autocomplete="username" required>
+      <label for="actPass">Придумайте пароль</label>
+      <input id="actPass" type="password" autocomplete="new-password" required>
+      <button class="submit" type="submit">Активировать</button>
+    </form>
 
-  <div class="game-card add-card">
-    <div class="game-card-icon">➕</div>
-    <div class="game-card-name">Следующая игра</div>
-    <div class="game-card-desc">Место зарезервировано.</div>
+    <div id="authMsg" class="msg"></div>
+  </div>
+
+  <div id="warehouseView" class="view">
+    <div class="header">
+      <div class="eyebrow">Nevanda</div>
+      <h1>Склад</h1>
+    </div>
+
+    <div class="session-row">
+      <div class="who">вошли как <span id="whoAmI"></span></div>
+      <button class="logout" onclick="logout()">выйти</button>
+    </div>
+
+    <div class="search-row">
+      <span class="icon">🔍</span>
+      <input id="itemSearch" placeholder="Поиск по названию..." oninput="renderGrid()">
+    </div>
+    <div class="item-count-label" id="itemCountLabel"></div>
+
+    <div class="item-grid" id="itemGrid"></div>
+
+    <button class="ghost-btn" onclick="refreshAll()">Обновить</button>
+
+    <div class="requests-section">
+      <div class="requests-title">Активные запросы</div>
+      <div id="requestsList"></div>
+    </div>
+
+    <button class="advanced-toggle" onclick="toggleAdvanced()">расширенный режим (сырой JSON)</button>
+    <div id="advancedBox" class="advanced-box">
+      <label>Отправить тестовые данные (JSON)</label>
+      <textarea id="stateInput">{"minecraft:iron_ingot": 240, "create:andesite_alloy": 96}</textarea>
+      <button class="submit" onclick="pushState()">Записать</button>
+    </div>
+
+    <div id="warehouseMsg" class="msg"></div>
+
+    <div id="adminSection" class="admin-section">
+      <div class="admin-title">Панель администратора</div>
+      <label for="newUsername">Новый логин для друга</label>
+      <input id="newUsername" autocomplete="off">
+      <button class="submit" onclick="createInvite()" type="button">Создать логин</button>
+      <div id="adminMsg" class="msg"></div>
+      <div id="inviteResult" class="invite-result">
+        Готово — скажите другу логин:<br>
+        <span class="username" id="inviteUsername"></span>
+      </div>
+    </div>
   </div>
 
 </div>
 
-<footer>
-  <div class="footer-credit">Игротека</div>
-  <button class="btn-transparent" onclick="openCreatorsPanel()">Создатели</button>
-</footer>
-
-<div id="creators-panel">
-<div class="settings-panel-header">
-<div class="settings-panel-title">✨ СОЗДАТЕЛИ</div>
-<button class="btn-icon-close" onclick="closeCreatorsPanel()">✕</button>
-</div>
-<ul class="creators-list">
-<li>Зонов Даниил</li>
-<li>Пара ИИ</li>
-<li><a href="https://github.com/F1reFlay/hodilka-golden-ring-game" target="_blank" rel="noopener">Гитхаб</a></li>
-<li>Родители</li>
-<li>Анастасия Михайловна</li>
-</ul>
+<div id="requestModal" class="modal-overlay" onclick="closeModalIfBackdrop(event)">
+  <div class="modal-card">
+    <div class="modal-icon" id="modalIcon"></div>
+    <div class="modal-name" id="modalName"></div>
+    <div class="modal-stock" id="modalStock"></div>
+    <label for="modalAmount">Количество</label>
+    <input id="modalAmount" type="number" min="1" value="1">
+    <button class="submit" onclick="submitRequest()">Запросить</button>
+    <button class="ghost-btn" onclick="closeModal()">Отмена</button>
+    <div id="modalMsg" class="msg"></div>
+  </div>
 </div>
 
 <script>
-function openCreatorsPanel() {
-    document.getElementById("creators-panel").classList.add("open");
-}
-function closeCreatorsPanel() {
-    document.getElementById("creators-panel").classList.remove("open");
-}
-document.addEventListener("keydown", function(e) {
-    if (e.key !== "Escape" && e.key !== "Esc") return;
-    const panel = document.getElementById("creators-panel");
-    if (panel && panel.classList.contains("open")) {
-        closeCreatorsPanel();
+  const WORKER_URL = "https://misty-wildflower-a4f2.dszonovdaniil.workers.dev";
+  const ADMIN_USERNAME_HINT = "F1reFlay";
+
+  let currentState = {};
+  let currentModalItem = null;
+
+  const CATEGORY_RULES = [
+    { test: /ore$/, icon: "⛏️" },
+    { test: /ingot/, icon: "🧱" },
+    { test: /nugget/, icon: "🔸" },
+    { test: /dust/, icon: "✨" },
+    { test: /gear/, icon: "⚙️" },
+    { test: /rod/, icon: "📏" },
+    { test: /plate/, icon: "🔲" },
+    { test: /(diamond|emerald|gem|amethyst)/, icon: "💎" },
+    { test: /(log|plank|wood)/, icon: "🪵" },
+    { test: /(seed|wheat|crop|food|carrot|potato)/, icon: "🌾" },
+    { test: /(bucket|fluid)/, icon: "🪣" },
+    { test: /(circuit|chip|wire|redstone)/, icon: "🔌" },
+    { test: /(stone|cobble|andesite|granite|diorite)/, icon: "🪨" },
+    { test: /(sword|axe|pickaxe|hoe|shovel|tool)/, icon: "🔧" },
+    { test: /(coal|charcoal)/, icon: "⚫" },
+    { test: /(glass)/, icon: "🔷" },
+  ];
+
+  function iconFor(itemId) {
+    const short = itemId.split(":").pop();
+    for (const rule of CATEGORY_RULES) {
+      if (rule.test.test(short)) return rule.icon;
     }
-});
+    return "📦";
+  }
+
+  function prettyName(itemId) {
+    const short = itemId.split(":").pop();
+    return short.split("_").map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(" ");
+  }
+
+  function setStatus(live, text) {
+    document.getElementById("statusDot").classList.toggle("live", live);
+    document.getElementById("statusText").textContent = text;
+  }
+
+  function switchTab(which) {
+    document.getElementById("tabLogin").classList.toggle("active", which === "login");
+    document.getElementById("tabActivate").classList.toggle("active", which === "activate");
+    document.getElementById("loginForm").classList.toggle("active", which === "login");
+    document.getElementById("activateForm").classList.toggle("active", which === "activate");
+    document.getElementById("authMsg").textContent = "";
+  }
+
+  function showAuthMsg(text, isError) {
+    const el = document.getElementById("authMsg");
+    el.textContent = text;
+    el.className = "msg " + (isError ? "error" : "ok");
+  }
+
+  function toggleAdvanced() {
+    document.getElementById("advancedBox").classList.toggle("show");
+  }
+
+  async function createInvite() {
+    const token = localStorage.getItem("warehouse_token");
+    const username = document.getElementById("newUsername").value.trim();
+    const msgEl = document.getElementById("adminMsg");
+    const resultEl = document.getElementById("inviteResult");
+    resultEl.classList.remove("show");
+    try {
+      const res = await fetch(WORKER_URL + "/admin/invite", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "Authorization": "Bearer " + token },
+        body: JSON.stringify({ username })
+      });
+      const data = await res.json();
+      if (!res.ok) { msgEl.textContent = "Ошибка: " + (data.error || res.status); msgEl.className = "msg error"; return; }
+      msgEl.textContent = "";
+      document.getElementById("inviteUsername").textContent = data.username;
+      resultEl.classList.add("show");
+      document.getElementById("newUsername").value = "";
+    } catch (err) {
+      msgEl.textContent = "Не достучались до сервера: " + err.message;
+      msgEl.className = "msg error";
+    }
+  }
+
+  async function doActivate(e) {
+    e.preventDefault();
+    const username = document.getElementById("actUser").value.trim();
+    const password = document.getElementById("actPass").value;
+    try {
+      const res = await fetch(WORKER_URL + "/activate", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ username, password })
+      });
+      const data = await res.json();
+      if (!res.ok) { showAuthMsg("Ошибка: " + (data.error || res.status), true); return false; }
+      showAuthMsg("Готово, теперь можно войти.", false);
+      switchTab("login");
+      document.getElementById("loginUser").value = username;
+    } catch (err) {
+      showAuthMsg("Не достучались до сервера: " + err.message, true);
+    }
+    return false;
+  }
+
+  async function doLogin(e) {
+    e.preventDefault();
+    const username = document.getElementById("loginUser").value.trim();
+    const password = document.getElementById("loginPass").value;
+    try {
+      const res = await fetch(WORKER_URL + "/login", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ username, password })
+      });
+      const data = await res.json();
+      if (!res.ok) { showAuthMsg("Ошибка: " + (data.error || res.status), true); return false; }
+      localStorage.setItem("warehouse_token", data.token);
+      localStorage.setItem("warehouse_user", username);
+      enterWarehouse(username);
+    } catch (err) {
+      showAuthMsg("Не достучались до сервера: " + err.message, true);
+    }
+    return false;
+  }
+
+  function logout() {
+    localStorage.removeItem("warehouse_token");
+    localStorage.removeItem("warehouse_user");
+    document.getElementById("warehouseView").classList.remove("active");
+    document.getElementById("authView").classList.add("active");
+    document.getElementById("mainPanel").classList.remove("wide");
+    setStatus(false, "не подключено");
+  }
+
+  function enterWarehouse(username) {
+    document.getElementById("authView").classList.remove("active");
+    document.getElementById("warehouseView").classList.add("active");
+    document.getElementById("mainPanel").classList.add("wide");
+    document.getElementById("whoAmI").textContent = username;
+    document.getElementById("adminSection").classList.toggle("show", username === ADMIN_USERNAME_HINT);
+    setStatus(true, "авторизован");
+    refreshAll();
+  }
+
+  function showWarehouseMsg(text, isError) {
+    const el = document.getElementById("warehouseMsg");
+    el.textContent = text;
+    el.className = "msg " + (isError ? "error" : "ok");
+  }
+
+  function renderGrid() {
+    const grid = document.getElementById("itemGrid");
+    const query = document.getElementById("itemSearch").value.trim().toLowerCase();
+    const entries = Object.entries(currentState)
+      .filter(([id]) => prettyName(id).toLowerCase().includes(query) || id.toLowerCase().includes(query))
+      .sort((a, b) => b[1] - a[1]);
+
+    document.getElementById("itemCountLabel").textContent = entries.length + " позиций";
+
+    if (entries.length === 0) {
+      grid.innerHTML = '<div class="empty-state" style="grid-column: 1 / -1;">Ничего не найдено</div>';
+      return;
+    }
+
+    grid.innerHTML = entries.map(([id, count]) => `
+      <div class="item-slot" onclick="openRequestModal('${id.replace(/'/g, "\\'")}')">
+        <div class="icon-wrap">
+          ${iconFor(id)}
+          <span class="count-badge">${formatCount(count)}</span>
+        </div>
+        <div class="name">${prettyName(id)}</div>
+        <div class="tooltip">${prettyName(id)} — ${count} шт.<br><span class="id">${id}</span></div>
+      </div>
+    `).join("");
+  }
+
+  function formatCount(n) {
+    if (n >= 1000000) return (n / 1000000).toFixed(1).replace(/\.0$/, "") + "M";
+    if (n >= 1000) return (n / 1000).toFixed(1).replace(/\.0$/, "") + "K";
+    return String(n);
+  }
+
+  function openRequestModal(id) {
+    currentModalItem = id;
+    const count = currentState[id] || 0;
+    document.getElementById("modalIcon").textContent = iconFor(id);
+    document.getElementById("modalName").textContent = prettyName(id);
+    document.getElementById("modalStock").textContent = "на складе: " + count;
+    const amountInput = document.getElementById("modalAmount");
+    amountInput.value = 1;
+    amountInput.max = count;
+    document.getElementById("modalMsg").textContent = "";
+    document.getElementById("requestModal").classList.add("show");
+  }
+
+  function closeModal() {
+    document.getElementById("requestModal").classList.remove("show");
+    currentModalItem = null;
+  }
+
+  function closeModalIfBackdrop(e) {
+    if (e.target.id === "requestModal") closeModal();
+  }
+
+  async function submitRequest() {
+    const token = localStorage.getItem("warehouse_token");
+    const amount = parseInt(document.getElementById("modalAmount").value, 10);
+    const msgEl = document.getElementById("modalMsg");
+    if (!amount || amount <= 0) { msgEl.textContent = "Укажите количество"; msgEl.className = "msg error"; return; }
+    try {
+      const res = await fetch(WORKER_URL + "/requests", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "Authorization": "Bearer " + token },
+        body: JSON.stringify({ item: currentModalItem, amount })
+      });
+      const data = await res.json();
+      if (!res.ok) { msgEl.textContent = "Ошибка: " + (data.error || res.status); msgEl.className = "msg error"; return; }
+      closeModal();
+      loadRequests();
+      showWarehouseMsg("Запрос отправлен.", false);
+    } catch (err) {
+      msgEl.textContent = "Не достучались до сервера: " + err.message;
+      msgEl.className = "msg error";
+    }
+  }
+
+  async function loadRequests() {
+    const token = localStorage.getItem("warehouse_token");
+    const listEl = document.getElementById("requestsList");
+    try {
+      const res = await fetch(WORKER_URL + "/requests", { headers: { "Authorization": "Bearer " + token } });
+      const list = await res.json();
+      if (!res.ok) return;
+      if (list.length === 0) {
+        listEl.innerHTML = '<div class="empty-state" style="padding:10px 0;">Пусто</div>';
+        return;
+      }
+      listEl.innerHTML = list.map(r => `
+        <div class="request-row">
+          <div>${iconFor(r.item)} ${prettyName(r.item)} × ${r.amount} <span class="who">— ${r.requestedBy}</span></div>
+          <button class="request-cancel" onclick="cancelRequest('${r.id}')">✕</button>
+        </div>
+      `).join("");
+    } catch (err) {
+      // тихо игнорируем — не критично для основного экрана
+    }
+  }
+
+  async function cancelRequest(id) {
+    const token = localStorage.getItem("warehouse_token");
+    try {
+      await fetch(WORKER_URL + "/requests/cancel", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "Authorization": "Bearer " + token },
+        body: JSON.stringify({ id })
+      });
+      loadRequests();
+    } catch (err) {}
+  }
+
+  async function refreshState() {
+    const token = localStorage.getItem("warehouse_token");
+    try {
+      const res = await fetch(WORKER_URL + "/warehouse", { headers: { "Authorization": "Bearer " + token } });
+      const text = await res.text();
+      if (!res.ok) { showWarehouseMsg("Ошибка: " + res.status, true); if (res.status === 401) logout(); return; }
+      currentState = JSON.parse(text);
+      document.getElementById("stateInput").value = text;
+      renderGrid();
+      showWarehouseMsg("Обновлено.", false);
+    } catch (err) {
+      showWarehouseMsg("Не достучались до сервера: " + err.message, true);
+    }
+  }
+
+  function refreshAll() {
+    refreshState();
+    loadRequests();
+  }
+
+  async function pushState() {
+    const token = localStorage.getItem("warehouse_token");
+    const raw = document.getElementById("stateInput").value;
+    try { JSON.parse(raw); } catch { showWarehouseMsg("Это не валидный JSON.", true); return; }
+    try {
+      const res = await fetch(WORKER_URL + "/warehouse", {
+        method: "POST", headers: { "Authorization": "Bearer " + token }, body: raw
+      });
+      if (!res.ok) { showWarehouseMsg("Ошибка записи: " + res.status, true); return; }
+      showWarehouseMsg("Записано.", false);
+      refreshState();
+    } catch (err) {
+      showWarehouseMsg("Не достучались до сервера: " + err.message, true);
+    }
+  }
+
+  const savedToken = localStorage.getItem("warehouse_token");
+  const savedUser = localStorage.getItem("warehouse_user");
+  if (savedToken && savedUser) enterWarehouse(savedUser);
 </script>
 
 </body>
 </html>
-
