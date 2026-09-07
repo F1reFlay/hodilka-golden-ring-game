@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="color-scheme" content="dark">
+<title>Склад — вход</title>
+<style>
+  :root { color-scheme: dark; }
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    min-height: 100vh;
+    background: #111213;
+    color: #f1f2f3;
+    font-family: sans-serif;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+  }
+
+  .panel {
+    width: 100%;
+    max-width: 420px;
+    background: #16181c;
+    padding: 30px 34px;
+    border-radius: 20px;
+    border: 1px solid #2e3440;
+    box-shadow: inset 0 0 15px rgba(164, 130, 255, 0.1), 0 4px 15px rgba(0,0,0,0.4);
+  }
+
+  .header { text-align: center; margin-bottom: 26px; }
+
+  .eyebrow {
+    font-size: 12px; font-weight: bold; color: #cbd5e1;
+    text-transform: uppercase; letter-spacing: 4px; margin-bottom: 6px;
+  }
+
+  h1 {
+    font-size: 26px; font-weight: bold; color: #a482ff;
+    text-transform: uppercase; letter-spacing: 2px; margin: 0;
+    text-shadow: 0 0 10px rgba(164, 130, 255, 0.5);
+  }
+
+  .status-line { text-align: center; font-size: 12px; color: #6b7280; margin-top: 8px; }
+  .status-line .dot {
+    display: inline-block; width: 7px; height: 7px; border-radius: 50%;
+    background: #4a3d6b; margin-right: 6px; vertical-align: middle;
+  }
+  .status-line .dot.live { background: #50fa7b; box-shadow: 0 0 6px rgba(80,250,123,0.7); }
+
+  .tabs {
+    display: flex; background: #111213; border: 1px solid #2e3440;
+    border-radius: 12px; overflow: hidden; margin-bottom: 20px;
+  }
+  .tabs button {
+    flex: 1; padding: 10px 0; background: transparent; border: none;
+    color: #8b8f98; font-family: sans-serif; font-size: 13px; font-weight: 600;
+    cursor: pointer; transition: background 0.15s, color 0.15s;
+  }
+  .tabs button.active { background: rgba(164, 130, 255, 0.15); color: #a482ff; }
+
+  label {
+    display: block; font-size: 12px; color: #8b8f98; margin-bottom: 6px;
+    text-transform: uppercase; letter-spacing: 1px;
+  }
+
+  input, textarea {
+    width: 100%; background: #111213; border: 1px solid #2e3440; color: #f1f2f3;
+    font-family: sans-serif; font-size: 14px; padding: 11px 12px; border-radius: 10px;
+    margin-bottom: 16px;
+  }
+  input:focus, textarea:focus {
+    outline: none; border-color: #a482ff; box-shadow: 0 0 0 3px rgba(164, 130, 255, 0.15);
+  }
+  textarea { min-height: 90px; resize: vertical; font-size: 13px; }
+
+  button.submit {
+    width: 100%; background: #50fa7b; color: #0d1a0f; border: none;
+    font-family: sans-serif; font-weight: 700; font-size: 15px; padding: 12px 0;
+    border-radius: 12px; cursor: pointer; box-shadow: 0 4px 14px rgba(80, 250, 123, 0.25);
+    transition: filter 0.15s, transform 0.1s;
+  }
+  button.submit:hover { filter: brightness(1.06); }
+  button.submit:active { transform: scale(0.97); }
+
+  .msg {
+    margin-top: 14px; font-size: 13px; line-height: 1.5; white-space: pre-wrap;
+    word-break: break-all; text-align: center;
+  }
+  .msg.error { color: #ff8a72; }
+  .msg.ok { color: #50fa7b; }
+
+  .view { display: none; }
+  .view.active { display: block; }
+  .form { display: none; }
+  .form.active { display: block; }
+
+  .session-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+  .session-row .who { font-size: 14px; color: #f1f2f3; }
+  .session-row .who span { color: #a482ff; font-weight: 700; }
+  .logout {
+    background: none; border: 1px solid #2e3440; color: #8b8f98;
+    font-family: sans-serif; font-size: 11px; padding: 6px 12px; border-radius: 8px; cursor: pointer;
+  }
+  .logout:hover { color: #f1f2f3; border-color: #4a4f5a; }
+
+  .state-box {
+    background: #111213; border: 1px solid #2e3440; border-radius: 10px; padding: 12px;
+    font-size: 12.5px; font-family: monospace; color: #9ca3af; white-space: pre-wrap;
+    word-break: break-all; min-height: 40px; margin-bottom: 16px;
+  }
+
+  .ghost-btn {
+    width: 100%; background: transparent; border: 1px solid #2e3440; color: #cbd5e1;
+    font-family: sans-serif; font-size: 13px; font-weight: 600; padding: 9px 0;
+    border-radius: 10px; cursor: pointer; margin-bottom: 18px;
+  }
+  .ghost-btn:hover { border-color: #a482ff; color: #a482ff; }
+
+  .admin-link {
+    display: block; text-align: center; margin-top: 18px; font-size: 11px;
+    color: #4a4f5a; text-decoration: none; cursor: pointer; background: none; border: none;
+    width: 100%; font-family: sans-serif;
+  }
+  .admin-link:hover { color: #8b8f98; }
+
+  .admin-box {
+    display: none; margin-top: 16px; padding-top: 16px; border-top: 1px dashed #2e3440;
+  }
+  .admin-box.active { display: block; }
+
+  .invite-result {
+    background: #111213; border: 1px solid #50fa7b; border-radius: 10px; padding: 12px;
+    margin-top: 12px; font-size: 13px; text-align: center; display: none;
+  }
+  .invite-result.show { display: block; }
+  .invite-result .username { color: #50fa7b; font-weight: 700; font-size: 16px; }
+</style>
+</head>
+<body>
+
+<div class="panel">
+
+  <div id="authView" class="view active">
+    <div class="header">
+      <div class="eyebrow">Nevanda</div>
+      <h1>Вход</h1>
+      <div class="status-line"><span class="dot" id="statusDot"></span><span id="statusText">не подключено</span></div>
+    </div>
+
+    <div class="tabs">
+      <button id="tabLogin" class="active" onclick="switchTab('login')">Вход</button>
+      <button id="tabActivate" onclick="switchTab('activate')">Активация</button>
+    </div>
+
+    <form id="loginForm" class="form active" onsubmit="return doLogin(event)">
+      <label for="loginUser">Логин</label>
+      <input id="loginUser" autocomplete="username" required>
+      <label for="loginPass">Пароль</label>
+      <input id="loginPass" type="password" autocomplete="current-password" required>
+      <button class="submit" type="submit">Войти</button>
+    </form>
+
+    <form id="activateForm" class="form" onsubmit="return doActivate(event)">
+      <label for="actUser">Логин, который вам дали</label>
+      <input id="actUser" autocomplete="username" required>
+      <label for="actPass">Придумайте пароль</label>
+      <input id="actPass" type="password" autocomplete="new-password" required>
+      <button class="submit" type="submit">Активировать</button>
+    </form>
+
+    <div id="authMsg" class="msg"></div>
+
+    <button class="admin-link" onclick="toggleAdmin()">панель администратора</button>
+
+    <div id="adminBox" class="admin-box">
+      <label for="adminSecret">Ключ администратора</label>
+      <input id="adminSecret" type="password" autocomplete="off">
+      <label for="newUsername">Новый логин для друга</label>
+      <input id="newUsername" autocomplete="off">
+      <button class="submit" onclick="createInvite()" type="button">Создать логин</button>
+      <div id="adminMsg" class="msg"></div>
+      <div id="inviteResult" class="invite-result">
+        Готово — скажите другу логин:<br>
+        <span class="username" id="inviteUsername"></span>
+      </div>
+    </div>
+  </div>
+
+  <div id="warehouseView" class="view">
+    <div class="header">
+      <div class="eyebrow">Nevanda</div>
+      <h1>Панель</h1>
+    </div>
+
+    <div class="session-row">
+      <div class="who">вошли как <span id="whoAmI"></span></div>
+      <button class="logout" onclick="logout()">выйти</button>
+    </div>
+
+    <label>Состояние склада</label>
+    <div class="state-box" id="stateBox">—</div>
+
+    <button class="ghost-btn" onclick="refreshState()">Обновить</button>
+
+    <label>Отправить тестовые данные (JSON)</label>
+    <textarea id="stateInput">{"iron_plate": 240, "copper_plate": 96}</textarea>
+    <button class="submit" onclick="pushState()">Записать</button>
+
+    <div id="warehouseMsg" class="msg"></div>
+  </div>
+
+</div>
+
+<script>
+  const WORKER_URL = "https://misty-wildflower-a4f2.dszonovdaniil.workers.dev";
+
+  function setStatus(live, text) {
+    document.getElementById("statusDot").classList.toggle("live", live);
+    document.getElementById("statusText").textContent = text;
+  }
+
+  function switchTab(which) {
+    document.getElementById("tabLogin").classList.toggle("active", which === "login");
+    document.getElementById("tabActivate").classList.toggle("active", which === "activate");
+    document.getElementById("loginForm").classList.toggle("active", which === "login");
+    document.getElementById("activateForm").classList.toggle("active", which === "activate");
+    document.getElementById("authMsg").textContent = "";
+  }
+
+  function showAuthMsg(text, isError) {
+    const el = document.getElementById("authMsg");
+    el.textContent = text;
+    el.className = "msg " + (isError ? "error" : "ok");
+  }
+
+  function toggleAdmin() {
+    const box = document.getElementById("adminBox");
+    box.classList.toggle("active");
+    const saved = localStorage.getItem("admin_secret");
+    if (saved) document.getElementById("adminSecret").value = saved;
+  }
+
+  async function createInvite() {
+    const secret = document.getElementById("adminSecret").value;
+    const username = document.getElementById("newUsername").value.trim();
+    const msgEl = document.getElementById("adminMsg");
+    const resultEl = document.getElementById("inviteResult");
+    resultEl.classList.remove("show");
+    try {
+      const res = await fetch(WORKER_URL + "/admin/invite", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "X-Admin-Secret": secret },
+        body: JSON.stringify({ username })
+      });
+      const data = await res.json();
+      if (!res.ok) { msgEl.textContent = "Ошибка: " + (data.error || res.status); msgEl.className = "msg error"; return; }
+      localStorage.setItem("admin_secret", secret);
+      msgEl.textContent = "";
+      document.getElementById("inviteUsername").textContent = data.username;
+      resultEl.classList.add("show");
+      document.getElementById("newUsername").value = "";
+    } catch (err) {
+      msgEl.textContent = "Не достучались до сервера: " + err.message;
+      msgEl.className = "msg error";
+    }
+  }
+
+  async function doActivate(e) {
+    e.preventDefault();
+    const username = document.getElementById("actUser").value.trim();
+    const password = document.getElementById("actPass").value;
+    try {
+      const res = await fetch(WORKER_URL + "/activate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ username, password })
+      });
+      const data = await res.json();
+      if (!res.ok) { showAuthMsg("Ошибка: " + (data.error || res.status), true); return false; }
+      showAuthMsg("Готово, теперь можно войти.", false);
+      switchTab("login");
+      document.getElementById("loginUser").value = username;
+    } catch (err) {
+      showAuthMsg("Не достучались до сервера: " + err.message, true);
+    }
+    return false;
+  }
+
+  async function doLogin(e) {
+    e.preventDefault();
+    const username = document.getElementById("loginUser").value.trim();
+    const password = document.getElementById("loginPass").value;
+    try {
+      const res = await fetch(WORKER_URL + "/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ username, password })
+      });
+      const data = await res.json();
+      if (!res.ok) { showAuthMsg("Ошибка: " + (data.error || res.status), true); return false; }
+      localStorage.setItem("warehouse_token", data.token);
+      localStorage.setItem("warehouse_user", username);
+      enterWarehouse(username);
+    } catch (err) {
+      showAuthMsg("Не достучались до сервера: " + err.message, true);
+    }
+    return false;
+  }
+
+  function logout() {
+    localStorage.removeItem("warehouse_token");
+    localStorage.removeItem("warehouse_user");
+    document.getElementById("warehouseView").classList.remove("active");
+    document.getElementById("authView").classList.add("active");
+    setStatus(false, "не подключено");
+  }
+
+  function enterWarehouse(username) {
+    document.getElementById("authView").classList.remove("active");
+    document.getElementById("warehouseView").classList.add("active");
+    document.getElementById("whoAmI").textContent = username;
+    setStatus(true, "авторизован");
+    refreshState();
+  }
+
+  function showWarehouseMsg(text, isError) {
+    const el = document.getElementById("warehouseMsg");
+    el.textContent = text;
+    el.className = "msg " + (isError ? "error" : "ok");
+  }
+
+  async function refreshState() {
+    const token = localStorage.getItem("warehouse_token");
+    try {
+      const res = await fetch(WORKER_URL + "/warehouse", { headers: { "Authorization": "Bearer " + token } });
+      const text = await res.text();
+      if (!res.ok) { showWarehouseMsg("Ошибка: " + res.status, true); if (res.status === 401) logout(); return; }
+      document.getElementById("stateBox").textContent = text;
+      showWarehouseMsg("Обновлено.", false);
+    } catch (err) {
+      showWarehouseMsg("Не достучались до сервера: " + err.message, true);
+    }
+  }
+
+  async function pushState() {
+    const token = localStorage.getItem("warehouse_token");
+    const raw = document.getElementById("stateInput").value;
+    try { JSON.parse(raw); } catch { showWarehouseMsg("Это не валидный JSON.", true); return; }
+    try {
+      const res = await fetch(WORKER_URL + "/warehouse", {
+        method: "POST", headers: { "Authorization": "Bearer " + token }, body: raw
+      });
+      if (!res.ok) { showWarehouseMsg("Ошибка записи: " + res.status, true); return; }
+      showWarehouseMsg("Записано.", false);
+      refreshState();
+    } catch (err) {
+      showWarehouseMsg("Не достучались до сервера: " + err.message, true);
+    }
+  }
+
+  const savedToken = localStorage.getItem("warehouse_token");
+  const savedUser = localStorage.getItem("warehouse_user");
+  if (savedToken && savedUser) enterWarehouse(savedUser);
+</script>
+
+</body>
+</html>
