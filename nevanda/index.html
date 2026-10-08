@@ -20,7 +20,7 @@
     box-shadow: inset 0 0 15px rgba(164, 130, 255, 0.1), 0 4px 15px rgba(0,0,0,0.4);
     transition: max-width 0.2s;
   }
-  .panel.wide { max-width: 620px; }
+  .panel.wide { max-width: 640px; }
 
   .header { text-align: center; margin-bottom: 26px; }
   .eyebrow { font-size: 12px; font-weight: bold; color: #cbd5e1; text-transform: uppercase; letter-spacing: 4px; margin-bottom: 6px; }
@@ -82,47 +82,51 @@
   }
   .logout:hover { color: #f1f2f3; border-color: #4a4f5a; }
 
-  /* --- поиск --- */
   .search-row { position: relative; margin-bottom: 14px; }
   .search-row input { margin-bottom: 0; padding-left: 34px; }
   .search-row .icon { position: absolute; left: 11px; top: 50%; transform: translateY(-50%); font-size: 13px; color: #6b7280; }
   .item-count-label { font-size: 11px; color: #6b7280; margin-bottom: 10px; text-align: right; }
 
-  /* --- сетка предметов (AE2-стиль) --- */
   .item-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(62px, 1fr));
-    gap: 6px;
+    grid-template-columns: repeat(auto-fill, minmax(84px, 1fr));
+    gap: 8px;
     margin-bottom: 16px;
-    max-height: 340px;
+    max-height: 380px;
     overflow-y: auto;
-    padding: 4px;
+    padding: 6px 4px;
   }
   .item-slot {
     position: relative;
-    aspect-ratio: 1;
     background: #111213;
     border: 1px solid #2e3440;
-    border-radius: 6px;
+    border-radius: 8px;
+    padding: 10px 4px 8px;
     display: flex;
+    flex-direction: column;
     align-items: center;
-    justify-content: center;
-    font-size: 24px;
-    cursor: default;
-    transition: border-color 0.12s, transform 0.08s;
+    cursor: pointer;
+    transition: border-color 0.12s, transform 0.08s, background 0.12s;
   }
-  .item-slot:hover { border-color: #a482ff; transform: translateY(-1px); }
-  .item-slot .count {
-    position: absolute; bottom: 2px; right: 4px;
-    font-size: 10.5px; font-weight: 700; color: #f1f2f3;
-    text-shadow: 0 0 3px #000, 0 0 3px #000;
+  .item-slot:hover { border-color: #a482ff; transform: translateY(-2px); background: #191b21; }
+  .item-slot .icon-wrap { position: relative; font-size: 26px; line-height: 1; margin-bottom: 6px; }
+  .item-slot .count-badge {
+    position: absolute; top: -8px; right: -14px;
+    background: #1c1e24; border: 1px solid #2e3440; border-radius: 8px;
+    padding: 1px 5px; font-size: 9.5px; font-weight: 700; color: #f1f2f3;
+  }
+  .item-slot .name {
+    font-size: 9.5px; color: #9ca3af; text-align: center; line-height: 1.25;
+    display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+    overflow: hidden; width: 100%;
   }
   .item-slot .tooltip {
     position: absolute; bottom: calc(100% + 6px); left: 50%; transform: translateX(-50%);
     background: #0a0a0b; border: 1px solid #2e3440; border-radius: 6px;
-    padding: 5px 9px; font-size: 11px; white-space: nowrap; color: #f1f2f3;
+    padding: 6px 10px; font-size: 10.5px; white-space: nowrap; color: #cbd5e1;
     opacity: 0; pointer-events: none; transition: opacity 0.12s; z-index: 5;
   }
+  .item-slot .tooltip .id { color: #6b7280; }
   .item-slot:hover .tooltip { opacity: 1; }
 
   .empty-state { text-align: center; color: #6b7280; font-size: 13px; padding: 30px 0; }
@@ -142,6 +146,19 @@
   .advanced-box { display: none; }
   .advanced-box.show { display: block; }
 
+  .requests-section { margin-top: 18px; padding-top: 16px; border-top: 1px dashed #2e3440; }
+  .requests-title { font-size: 11px; color: #8b8f98; text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 10px; }
+  .request-row {
+    display: flex; justify-content: space-between; align-items: center;
+    background: #111213; border: 1px solid #2e3440; border-radius: 8px;
+    padding: 8px 10px; margin-bottom: 6px; font-size: 12.5px;
+  }
+  .request-row .who { color: #6b7280; font-size: 11px; }
+  .request-cancel {
+    background: none; border: none; color: #6b7280; font-size: 14px; cursor: pointer; padding: 0 4px;
+  }
+  .request-cancel:hover { color: #ff8a72; }
+
   .admin-section { display: none; margin-top: 22px; padding-top: 20px; border-top: 1px dashed #2e3440; }
   .admin-section.show { display: block; }
   .admin-title { font-size: 12px; color: #a482ff; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 14px; text-align: center; }
@@ -152,6 +169,21 @@
   }
   .invite-result.show { display: block; }
   .invite-result .username { color: #50fa7b; font-weight: 700; font-size: 16px; }
+
+  /* --- модалка запроса --- */
+  .modal-overlay {
+    display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6);
+    align-items: center; justify-content: center; z-index: 50; padding: 20px;
+  }
+  .modal-overlay.show { display: flex; }
+  .modal-card {
+    width: 100%; max-width: 280px; background: #16181c; border: 1px solid #2e3440;
+    border-radius: 16px; padding: 24px; text-align: center;
+    box-shadow: inset 0 0 15px rgba(164, 130, 255, 0.1), 0 8px 30px rgba(0,0,0,0.5);
+  }
+  .modal-icon { font-size: 40px; margin-bottom: 8px; }
+  .modal-name { font-size: 15px; font-weight: 700; color: #f1f2f3; margin-bottom: 2px; }
+  .modal-stock { font-size: 12px; color: #6b7280; margin-bottom: 18px; }
 </style>
 </head>
 <body>
@@ -210,7 +242,12 @@
 
     <div class="item-grid" id="itemGrid"></div>
 
-    <button class="ghost-btn" onclick="refreshState()">Обновить</button>
+    <button class="ghost-btn" onclick="refreshAll()">Обновить</button>
+
+    <div class="requests-section">
+      <div class="requests-title">Активные запросы</div>
+      <div id="requestsList"></div>
+    </div>
 
     <button class="advanced-toggle" onclick="toggleAdvanced()">расширенный режим (сырой JSON)</button>
     <div id="advancedBox" class="advanced-box">
@@ -236,13 +273,26 @@
 
 </div>
 
+<div id="requestModal" class="modal-overlay" onclick="closeModalIfBackdrop(event)">
+  <div class="modal-card">
+    <div class="modal-icon" id="modalIcon"></div>
+    <div class="modal-name" id="modalName"></div>
+    <div class="modal-stock" id="modalStock"></div>
+    <label for="modalAmount">Количество</label>
+    <input id="modalAmount" type="number" min="1" value="1">
+    <button class="submit" onclick="submitRequest()">Запросить</button>
+    <button class="ghost-btn" onclick="closeModal()">Отмена</button>
+    <div id="modalMsg" class="msg"></div>
+  </div>
+</div>
+
 <script>
   const WORKER_URL = "https://misty-wildflower-a4f2.dszonovdaniil.workers.dev";
   const ADMIN_USERNAME_HINT = "F1reFlay";
 
   let currentState = {};
+  let currentModalItem = null;
 
-  // --- иконки по категориям (без чужих текстур, только эмодзи + цвет) ---
   const CATEGORY_RULES = [
     { test: /ore$/, icon: "⛏️" },
     { test: /ingot/, icon: "🧱" },
@@ -378,7 +428,7 @@
     document.getElementById("whoAmI").textContent = username;
     document.getElementById("adminSection").classList.toggle("show", username === ADMIN_USERNAME_HINT);
     setStatus(true, "авторизован");
-    refreshState();
+    refreshAll();
   }
 
   function showWarehouseMsg(text, isError) {
@@ -402,10 +452,13 @@
     }
 
     grid.innerHTML = entries.map(([id, count]) => `
-      <div class="item-slot">
-        ${iconFor(id)}
-        <span class="count">${formatCount(count)}</span>
-        <span class="tooltip">${prettyName(id)} · ${count}</span>
+      <div class="item-slot" onclick="openRequestModal('${id.replace(/'/g, "\\'")}')">
+        <div class="icon-wrap">
+          ${iconFor(id)}
+          <span class="count-badge">${formatCount(count)}</span>
+        </div>
+        <div class="name">${prettyName(id)}</div>
+        <div class="tooltip">${prettyName(id)} — ${count} шт.<br><span class="id">${id}</span></div>
       </div>
     `).join("");
   }
@@ -414,6 +467,84 @@
     if (n >= 1000000) return (n / 1000000).toFixed(1).replace(/\.0$/, "") + "M";
     if (n >= 1000) return (n / 1000).toFixed(1).replace(/\.0$/, "") + "K";
     return String(n);
+  }
+
+  function openRequestModal(id) {
+    currentModalItem = id;
+    const count = currentState[id] || 0;
+    document.getElementById("modalIcon").textContent = iconFor(id);
+    document.getElementById("modalName").textContent = prettyName(id);
+    document.getElementById("modalStock").textContent = "на складе: " + count;
+    const amountInput = document.getElementById("modalAmount");
+    amountInput.value = 1;
+    amountInput.max = count;
+    document.getElementById("modalMsg").textContent = "";
+    document.getElementById("requestModal").classList.add("show");
+  }
+
+  function closeModal() {
+    document.getElementById("requestModal").classList.remove("show");
+    currentModalItem = null;
+  }
+
+  function closeModalIfBackdrop(e) {
+    if (e.target.id === "requestModal") closeModal();
+  }
+
+  async function submitRequest() {
+    const token = localStorage.getItem("warehouse_token");
+    const amount = parseInt(document.getElementById("modalAmount").value, 10);
+    const msgEl = document.getElementById("modalMsg");
+    if (!amount || amount <= 0) { msgEl.textContent = "Укажите количество"; msgEl.className = "msg error"; return; }
+    try {
+      const res = await fetch(WORKER_URL + "/requests", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "Authorization": "Bearer " + token },
+        body: JSON.stringify({ item: currentModalItem, amount })
+      });
+      const data = await res.json();
+      if (!res.ok) { msgEl.textContent = "Ошибка: " + (data.error || res.status); msgEl.className = "msg error"; return; }
+      closeModal();
+      loadRequests();
+      showWarehouseMsg("Запрос отправлен.", false);
+    } catch (err) {
+      msgEl.textContent = "Не достучались до сервера: " + err.message;
+      msgEl.className = "msg error";
+    }
+  }
+
+  async function loadRequests() {
+    const token = localStorage.getItem("warehouse_token");
+    const listEl = document.getElementById("requestsList");
+    try {
+      const res = await fetch(WORKER_URL + "/requests", { headers: { "Authorization": "Bearer " + token } });
+      const list = await res.json();
+      if (!res.ok) return;
+      if (list.length === 0) {
+        listEl.innerHTML = '<div class="empty-state" style="padding:10px 0;">Пусто</div>';
+        return;
+      }
+      listEl.innerHTML = list.map(r => `
+        <div class="request-row">
+          <div>${iconFor(r.item)} ${prettyName(r.item)} × ${r.amount} <span class="who">— ${r.requestedBy}</span></div>
+          <button class="request-cancel" onclick="cancelRequest('${r.id}')">✕</button>
+        </div>
+      `).join("");
+    } catch (err) {
+      // тихо игнорируем — не критично для основного экрана
+    }
+  }
+
+  async function cancelRequest(id) {
+    const token = localStorage.getItem("warehouse_token");
+    try {
+      await fetch(WORKER_URL + "/requests/cancel", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "Authorization": "Bearer " + token },
+        body: JSON.stringify({ id })
+      });
+      loadRequests();
+    } catch (err) {}
   }
 
   async function refreshState() {
@@ -429,6 +560,11 @@
     } catch (err) {
       showWarehouseMsg("Не достучались до сервера: " + err.message, true);
     }
+  }
+
+  function refreshAll() {
+    refreshState();
+    loadRequests();
   }
 
   async function pushState() {
