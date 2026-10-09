@@ -1,0 +1,24 @@
+/* Общая кнопка «← Игротека» для всех страниц сайта. Подключать: <link rel="stylesheet" href="../hub-link.css"> */
+.hub-link {
+  position: absolute; top: 16px; left: 16px; z-index: 900;
+  display: inline-flex; align-items: center; gap: 6px;
+  font-family: sans-serif; font-size: 13px; font-weight: bold; letter-spacing: 0.5px; line-height: 1;
+  color: #9aa3b2; text-decoration: none;
+  background: #16181c; border: 1px solid #2e3440; border-radius: 999px; padding: 10px 18px;
+  box-shadow: inset 0 0 10px rgba(164, 130, 255, 0.08), 0 2px 8px rgba(0, 0, 0, 0.35);
+  transition: color 0.2s ease, border-color 0.2s ease, background 0.2s ease, box-shadow 0.2s ease;
+}
+.hub-link:hover {
+  color: #f1f2f3; border-color: #a482ff; background: rgba(164, 130, 255, 0.1);
+  box-shadow: inset 0 0 10px rgba(164, 130, 255, 0.15), 0 0 14px rgba(164, 130, 255, 0.25);
+}
+.hub-link:active { transform: scale(0.97); }
+
+/* светлая тема ходилки */
+body.light-theme .hub-link { background: #ffffff; border-color: #d0d5dd; color: #4b5563; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1); }
+body.light-theme .hub-link:hover { color: #7c3aed; border-color: #7c3aed; background: #f5f0ff; }
+
+/* на узких экранах кнопка не должна наезжать на заголовок */
+@media (max-width: 1024px) {
+  body { padding-top: 68px !important; }
+}
