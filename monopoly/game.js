@@ -31,7 +31,7 @@ const priceText   = "#8be9fd";
 const taxText     = "#ff8a72";
 
 // label: название с переносами "\n" (если нужно разбить длинное слово), иначе рисуется name.
-// price: цена покупки, tax: сумма налога.
+// price: цена покупки, tax: сумма налога, hint: подпись под иконкой.
 const tiles = [
     { name: "СТАРТ", group: "corner", emoji: "🚀" },
     { name: "Полевая", group: "brown", price: 60 },
@@ -74,6 +74,14 @@ const tiles = [
     { name: "Налог на роскошь", label: "Налог на\nроскошь", group: "special", emoji: "💎", tax: 100 },
     { name: "Кутузовский", label: "Кутузов-\nский", group: "blue", price: 400 }
 ];
+
+// ---- состояние игры (его создаёт logic.js; до старта игры доска рисуется пустой) ----
+let gameState = null;
+
+// ---- анимации ----
+const depress = new Array(40).fill(0); // 0..1, насколько клетка «прогнулась» под фишкой
+let highlightTile = -1;                // клетка, на которую идёт фишка (подсвечена, пока фишка в пути)
+let rafId = 0;
 
 function getTileRectRaw(index) {
     const i = ((index % 40) + 40) % 40;
@@ -214,6 +222,144 @@ function drawTileContent(tile, lw, lh) {
     }
 }
 
+// ---- фишки ----
+function activePlayersOnTile(tileIdx) {
+    if (!gameState) return [];
+    return gameState.players.filter(p => !p.bankrupt && p.pos === tileIdx);
+}
+
+// Позиция фишки (в координатах доски) в «слоте» клетки; slot/count - место среди фишек на этой клетке.
+function tokenWorldPos(tileIdx, slot, count) {
+    const r = getTileRect(tileIdx);
+    const corner = !!r.corner;
+    const sideways = r.side === "left" || r.side === "right";
+    const lh = sideways ? r.w : r.h;
+    const spacing = corner ? 18 : 12.5;
+    const lx = (slot - (count - 1) / 2) * spacing;
+    const ly = corner ? 0 : -lh / 2 + 13;
+    const rot = corner ? 0 : getSideRotation(r.side);
+    const cx = r.x + r.w / 2, cy = r.y + r.h / 2;
+    return {
+        x: cx + lx * Math.cos(rot) - ly * Math.sin(rot),
+        y: cy + lx * Math.sin(rot) + ly * Math.cos(rot)
+    };
+}
+
+function slotOnTile(tileIdx, player) {
+    const list = activePlayersOnTile(tileIdx).slice();
+    if (list.indexOf(player) === -1) list.push(player);
+    list.sort((a, b) => gameState.players.indexOf(a) - gameState.players.indexOf(b));
+    return { slot: list.indexOf(player), count: list.length };
+}
+
+function drawToken(player, x, y, boost, shadowX, shadowY) {
+    const radius = 6.6 * boost;
+    if (shadowX !== undefined) {
+        ctx.beginPath();
+        ctx.arc(shadowX, shadowY + 1.5, 6.2, 0, Math.PI * 2);
+        ctx.fillStyle = "rgba(0,0,0,0.45)";
+        ctx.fill();
+    }
+    ctx.save();
+    ctx.shadowColor = player.color;
+    ctx.shadowBlur = 8;
+    ctx.beginPath();
+    ctx.arc(x, y, radius, 0, Math.PI * 2);
+    ctx.fillStyle = player.color;
+    ctx.fill();
+    ctx.restore();
+    ctx.beginPath();
+    ctx.arc(x, y, radius, 0, Math.PI * 2);
+    ctx.lineWidth = 1.8;
+    ctx.strokeStyle = "#0d0e10";
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.arc(x - radius * 0.3, y - radius * 0.3, radius * 0.3, 0, Math.PI * 2);
+    ctx.fillStyle = "rgba(255,255,255,0.55)";
+    ctx.fill();
+}
+
+function drawTokens() {
+    if (!gameState) return;
+    const order = gameState.players.filter(p => !p.bankrupt);
+    // ходящий рисуется поверх остальных
+    order.sort((a, b) => (gameState.players.indexOf(a) === gameState.current ? 1 : 0) - (gameState.players.indexOf(b) === gameState.current ? 1 : 0));
+    order.forEach(p => {
+        if (p.hop) {
+            const fs = slotOnTile(p.hop.from, p);
+            const ts = slotOnTile(p.hop.to, p);
+            const a = tokenWorldPos(p.hop.from, fs.slot, fs.count);
+            const b = tokenWorldPos(p.hop.to, ts.slot, ts.count);
+            const e = p.hop.t < 0.5 ? 2 * p.hop.t * p.hop.t : 1 - Math.pow(-2 * p.hop.t + 2, 2) / 2;
+            const x = a.x + (b.x - a.x) * e, y = a.y + (b.y - a.y) * e;
+            drawToken(p, x, y, 1 + 0.55 * Math.sin(Math.PI * p.hop.t), x, y);
+        } else {
+            const s = slotOnTile(p.pos, p);
+            const pos = tokenWorldPos(p.pos, s.slot, s.count);
+            drawToken(p, pos.x, pos.y, 1);
+        }
+    });
+}
+
+// Фишка «наступает» на клетку: клетка прогибается, пока на ней фишка (или она вот-вот приземлится).
+function occupiedTiles() {
+    const set = new Set();
+    if (!gameState) return set;
+    gameState.players.forEach(p => {
+        if (p.bankrupt) return;
+        if (p.hop) {
+            if (p.hop.t <= 0.15) set.add(p.hop.from);
+            if (p.hop.t >= 0.55) set.add(p.hop.to);
+        } else {
+            set.add(p.pos);
+        }
+    });
+    return set;
+}
+
+function tick() {
+    rafId = 0;
+    let active = false;
+    const occupied = occupiedTiles();
+    for (let i = 0; i < 40; i++) {
+        const target = occupied.has(i) ? 1 : 0;
+        const diff = target - depress[i];
+        if (Math.abs(diff) > 0.01) { depress[i] += diff * 0.3; active = true; }
+        else depress[i] = target;
+    }
+    if (highlightTile >= 0) active = true;
+    if (gameState && gameState.players.some(p => p.hop)) active = true;
+    drawBoard();
+    if (active) requestDraw();
+}
+
+function requestDraw() {
+    if (!rafId) rafId = requestAnimationFrame(tick);
+}
+
+// Прыжок фишки на соседнюю (или дальнюю) клетку; завершается, когда фишка приземлилась.
+function hopToken(player, to, ms) {
+    return new Promise(resolve => {
+        const start = performance.now();
+        const duration = ms || 230;
+        player.hop = { from: player.pos, to: to, t: 0 };
+        function step(now) {
+            const t = Math.min((now - start) / duration, 1);
+            player.hop.t = t;
+            requestDraw();
+            if (t < 1) {
+                requestAnimationFrame(step);
+            } else {
+                player.pos = to;
+                player.hop = null;
+                requestDraw();
+                resolve();
+            }
+        }
+        requestAnimationFrame(step);
+    });
+}
+
 function drawBoard() {
     ctx.setTransform(1, 0, 0, 1, 0, 0);
     ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -232,28 +378,65 @@ function drawBoard() {
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
 
+    const pulse = 0.5 + 0.5 * Math.sin(performance.now() / 140);
+
     for (let i = 0; i < 40; i++) {
         const tile = tiles[i];
         const isCorner = tile.group === "corner";
         const r = getTileRect(i);
+        const owner = gameState ? gameState.owners[i] : undefined;
+        const ownerColor = owner !== undefined ? gameState.players[owner].color : null;
+
+        ctx.save();
+        // прогиб: клетка чуть уменьшается вокруг своего центра
+        const squish = 1 - 0.12 * depress[i];
+        const tcx = r.x + r.w / 2, tcy = r.y + r.h / 2;
+        ctx.translate(tcx, tcy);
+        ctx.scale(squish, squish);
+        ctx.translate(-tcx, -tcy);
 
         roundRect(r.x, r.y, r.w, r.h, 10);
         ctx.fillStyle = isCorner ? cornerBg : (tile.group === "special" ? specialBg : tileBg);
         ctx.fill();
-        ctx.strokeStyle = tileBorder;
-        ctx.lineWidth = 1.2;
-        ctx.stroke();
+
+        if (i === highlightTile) {
+            ctx.save();
+            ctx.shadowColor = "#a482ff";
+            ctx.shadowBlur = 10 + 14 * pulse;
+            ctx.fillStyle = "rgba(164,130,255," + (0.12 + 0.12 * pulse) + ")";
+            ctx.fill();
+            ctx.strokeStyle = "#c9b8ff";
+            ctx.lineWidth = 3;
+            ctx.stroke();
+            ctx.restore();
+        } else if (ownerColor) {
+            ctx.save();
+            ctx.shadowColor = ownerColor;
+            ctx.shadowBlur = 8;
+            ctx.strokeStyle = ownerColor;
+            ctx.lineWidth = 3;
+            ctx.stroke();
+            ctx.restore();
+        } else {
+            ctx.strokeStyle = tileBorder;
+            ctx.lineWidth = 1.2;
+            ctx.stroke();
+        }
 
         // текст развёрнут по своей стороне (задумано: так читается с «места» игрока, для удобства есть кнопка «Повернуть»)
         const sideways = r.side === "left" || r.side === "right";
         const lw = sideways ? r.h : r.w;
         const lh = sideways ? r.w : r.h;
         ctx.save();
-        ctx.translate(r.x + r.w / 2, r.y + r.h / 2);
+        ctx.translate(tcx, tcy);
         ctx.rotate(isCorner ? -currentAngle : getSideRotation(r.side));
         drawTileContent(tile, lw, lh);
         ctx.restore();
+
+        ctx.restore();
     }
+
+    drawTokens();
 
     ctx.restore();
 
@@ -274,16 +457,8 @@ function drawBoard() {
 function closeDisclaimer() {
     document.getElementById("disclaimer-modal").style.display = "none";
     try { localStorage.setItem("monopolyDisclaimerSeen", "1"); } catch (e) {}
+    if (typeof openSetup === "function") openSetup();
 }
 
-function initDisclaimer() {
-    let seen = null;
-    try { seen = localStorage.getItem("monopolyDisclaimerSeen"); } catch (e) {}
-    if (seen === "1") {
-        document.getElementById("disclaimer-modal").style.display = "none";
-    }
-}
-
-initDisclaimer();
 document.fonts.ready.then(drawBoard);
 drawBoard();

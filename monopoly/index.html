@@ -11,41 +11,129 @@
 <title>Монополия</title>
 <style>
 :root { color-scheme: dark; }
-body { font-family: sans-serif; background: #111213; color: #f1f2f3; margin: 0; padding: 20px; display: flex; flex-direction: column; align-items: center; }
+* { box-sizing: border-box; }
+body { font-family: sans-serif; background: #111213; color: #f1f2f3; margin: 0; padding: 56px 20px 20px; display: flex; flex-direction: column; align-items: center; }
+button { font-family: inherit; }
 
-#game-layout { display: flex; align-items: flex-start; gap: 24px; flex-wrap: wrap; justify-content: center; }
+#game-layout { display: flex; align-items: stretch; gap: 20px; flex-wrap: wrap; justify-content: center; width: 100%; }
 
-#board-wrap { display: flex; flex-direction: column; align-items: center; gap: 16px; }
-#board-canvas { width: min(800px, calc(100vw - 48px), calc(100vh - 150px)); height: auto; aspect-ratio: 1; box-sizing: border-box; border: 4px solid #2e3440; background: #16181c; border-radius: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.5); }
+/* --- доска --- */
+#board-wrap { display: flex; flex-direction: column; align-items: center; gap: 14px; order: 0; }
+#board-canvas { width: min(800px, calc(100vw - 40px), calc(100vh - 220px)); height: auto; aspect-ratio: 1; border: 4px solid #2e3440; background: #16181c; border-radius: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.5); }
+@media (min-width: 1180px) {
+  #board-canvas { width: min(800px, calc(100vw - 600px), calc(100vh - 220px)); min-width: 520px; }
+}
 
-.rotate-controls { display: flex; gap: 12px; align-items: center; }
-.btn-rotate { background: #232830; color: #fff; border: 2px solid #3b4252; border-radius: 14px; padding: 12px 22px; font-size: 14px; font-weight: bold; cursor: pointer; transition: all 0.2s ease; }
-.btn-rotate:hover { border-color: #a482ff; background: #1c1f26; transform: translateY(-2px); }
-.btn-rotate:active { transform: translateY(0) scale(0.96); }
+/* --- нижний ряд: кубики, подсказки, кнопки --- */
+#bottom-row { display: flex; gap: 14px; width: 100%; align-items: stretch; }
+.panel { background: #16181c; border: 2px solid #2e3440; border-radius: 18px; padding: 14px; box-shadow: inset 0 0 14px rgba(164,130,255,0.06); }
+.panel h3 { margin: 0 0 10px; font-size: 11px; letter-spacing: 3px; text-transform: uppercase; color: #8b8f98; font-weight: 700; }
 
-.side-indicator { font-size: 14px; color: #9aa3b2; }
+#dice-box { display: flex; align-items: center; gap: 12px; padding: 12px 16px; }
+.die { width: 58px; height: 58px; border-radius: 14px; background: linear-gradient(145deg, #ffffff, #cfd4de); display: grid; grid-template-columns: repeat(3, 1fr); grid-template-rows: repeat(3, 1fr); padding: 9px; box-shadow: 0 0 16px rgba(164,130,255,0.35), inset 0 -3px 6px rgba(0,0,0,0.18); }
+.die .pip { width: 100%; height: 100%; border-radius: 50%; background: transparent; transform: scale(0.8); }
+.die .pip.on { background: #16181c; }
+.die.rolling { animation: tumble 0.4s linear infinite; }
+@keyframes tumble { 0% { transform: rotate(0deg) scale(1); } 50% { transform: rotate(180deg) scale(1.15); } 100% { transform: rotate(360deg) scale(1); } }
+#roll-info { min-width: 62px; text-align: center; }
+#roll-sum { font-family: 'Unbounded', sans-serif; font-weight: 900; font-size: 34px; color: #c9b8ff; text-shadow: 0 0 14px rgba(164,130,255,0.6); line-height: 1; }
+#roll-note { font-size: 11px; color: #8b8f98; margin-top: 6px; letter-spacing: 1px; text-transform: uppercase; min-height: 13px; }
+
+#action-box { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 8px; padding: 12px 16px; }
+#turn-line { display: flex; align-items: center; gap: 8px; font-size: 12px; letter-spacing: 2px; text-transform: uppercase; color: #8b8f98; }
+#turn-dot { width: 12px; height: 12px; border-radius: 50%; background: #50fa7b; box-shadow: 0 0 8px currentColor; flex: none; }
+#turn-name { color: #f1f2f3; font-weight: 700; }
+#prompt { font-size: 15px; font-weight: 700; color: #f1f2f3; min-height: 20px; }
+#buttons { display: flex; gap: 8px; flex-wrap: wrap; }
+.btn { background: #232830; color: #fff; border: 2px solid #3b4252; border-radius: 14px; padding: 10px 18px; font-size: 14px; font-weight: bold; cursor: pointer; transition: all 0.2s ease; }
+.btn:hover:not(:disabled) { border-color: #a482ff; background: #1c1f26; transform: translateY(-2px); }
+.btn:active:not(:disabled) { transform: translateY(0) scale(0.96); }
+.btn:disabled { opacity: 0.4; cursor: not-allowed; }
+.btn.primary { background: #50fa7b; border-color: #50fa7b; color: #0d1a0f; }
+.btn.primary:hover:not(:disabled) { background: #6dff91; border-color: #6dff91; }
+#log { font-size: 12px; color: #6b7280; line-height: 1.5; max-height: 72px; overflow: hidden; }
+#log div:first-child { color: #9aa3b2; }
+
+#side-controls { display: flex; flex-direction: column; gap: 8px; justify-content: center; }
+.btn-rotate { white-space: nowrap; }
+.side-indicator { font-size: 13px; color: #9aa3b2; text-align: center; }
 .side-indicator b { color: #50fa7b; }
+.btn-small { padding: 8px 14px; font-size: 12px; }
 
-#deck-column { display: flex; flex-direction: column; gap: 16px; }
-.deck-card { background: #16181c; border: 2px solid #2e3440; border-radius: 18px; width: 220px; height: 150px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; box-shadow: 0 8px 20px rgba(0,0,0,0.4); transition: border-color 0.2s ease, transform 0.2s ease; box-sizing: border-box; }
-.deck-card:hover { border-color: #a482ff; transform: translateY(-4px); }
-.deck-icon { font-size: 46px; line-height: 1; }
-.deck-label { font-size: 11px; color: #9aa3b2; text-transform: uppercase; letter-spacing: 1px; }
-.deck-name { font-size: 24px; font-weight: bold; color: #8be9fd; }
-.deck-hint { font-size: 12px; color: #6272a4; text-align: center; line-height: 1.5; max-width: 220px; }
+/* --- боковые колонки --- */
+#left-col, #right-col { display: flex; flex-direction: column; gap: 14px; width: 240px; flex: none; order: 0; }
+#left-col .push-down { margin-top: auto; }
 
-.stub-note { max-width: 560px; text-align: center; font-size: 13px; color: #6272a4; margin-top: 14px; line-height: 1.6; }
+#others-list { display: flex; flex-direction: column; gap: 8px; }
+.player-row { display: flex; align-items: center; gap: 10px; font-size: 14px; }
+.player-row .dot { width: 14px; height: 14px; border-radius: 50%; flex: none; box-shadow: 0 0 8px currentColor; }
+.player-row .pname { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.player-row .pmoney { font-weight: 700; color: #f1f2f3; }
+.player-row.bankrupt { opacity: 0.4; text-decoration: line-through; }
+.muted { color: #6b7280; font-size: 13px; }
 
+#me-panel { position: relative; }
+#me-head { display: flex; align-items: center; gap: 8px; font-size: 13px; color: #9aa3b2; }
+#me-head .dot { width: 14px; height: 14px; border-radius: 50%; box-shadow: 0 0 8px currentColor; }
+#me-total { font-family: 'Unbounded', sans-serif; font-weight: 900; font-size: 30px; color: #50fa7b; text-shadow: 0 0 14px rgba(80,250,123,0.35); margin-top: 6px; }
+
+#notes { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.note { position: relative; height: 44px; border-radius: 8px; display: flex; align-items: center; justify-content: space-between; padding: 0 10px; color: #111213; font-weight: 900; font-size: 16px; font-family: 'Unbounded', sans-serif; box-shadow: inset 0 0 0 2px rgba(0,0,0,0.12), 0 2px 6px rgba(0,0,0,0.4); transition: opacity 0.3s ease; }
+.note small { font-family: sans-serif; font-size: 12px; font-weight: 700; background: rgba(0,0,0,0.25); color: #fff; border-radius: 8px; padding: 2px 7px; }
+.note.zero { opacity: 0.22; }
+
+.deck-card { background: #16181c; border: 2px solid #2e3440; border-radius: 18px; flex: 1; height: 120px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; box-shadow: 0 8px 20px rgba(0,0,0,0.4); transition: border-color 0.2s ease, transform 0.2s ease; }
+.deck-card:hover { border-color: #a482ff; transform: translateY(-3px); }
+.deck-icon { font-size: 36px; line-height: 1; }
+.deck-name { font-size: 18px; font-weight: bold; color: #8be9fd; }
+.deck-count { font-size: 11px; color: #6b7280; letter-spacing: 1px; text-transform: uppercase; }
+#decks-row { display: flex; gap: 12px; }
+
+#props-panel { flex: 1; min-height: 200px; display: flex; flex-direction: column; }
+#props-list { display: flex; flex-direction: column; gap: 10px; overflow-y: auto; max-height: 380px; }
+.props-card { border-left: 4px solid var(--pc); padding-left: 10px; }
+.props-card.current { background: rgba(255,255,255,0.03); }
+.props-title { font-size: 13px; font-weight: 700; margin-bottom: 6px; display: flex; justify-content: space-between; gap: 6px; }
+.chips { display: flex; flex-wrap: wrap; gap: 4px; }
+.chip { display: inline-flex; align-items: center; gap: 5px; padding: 2px 7px 2px 0; border-radius: 6px; background: #1c1f26; border: 1.5px solid var(--pc); font-size: 11px; color: #e5e9f0; overflow: hidden; }
+.chip i { width: 5px; align-self: stretch; background: var(--g); display: block; }
+
+/* --- всплывающие суммы --- */
+.float-money { position: fixed; z-index: 1500; pointer-events: none; font-weight: 900; font-size: 18px; animation: floatUp 1.3s ease-out forwards; text-shadow: 0 2px 8px rgba(0,0,0,0.8); }
+.float-money.plus { color: #50fa7b; }
+.float-money.minus { color: #ff8a72; }
+@keyframes floatUp { from { transform: translateY(0); opacity: 1; } to { transform: translateY(-36px); opacity: 0; } }
+
+/* --- окна --- */
 .modal-layout { display: flex; position: fixed; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.7); z-index: 1000; align-items: center; justify-content: center; }
-.disclaimer-box { background: #1c1f26; border: 2px solid #f1c40f; border-radius: 20px; padding: 32px 28px; max-width: 420px; text-align: center; box-shadow: 0 15px 40px rgba(0,0,0,0.7); }
-.disclaimer-icon { font-size: 40px; margin-bottom: 14px; }
-.disclaimer-title { font-size: 18px; font-weight: bold; color: #f1c40f; margin-bottom: 12px; }
-.disclaimer-text { font-size: 14px; color: #cbd5e1; line-height: 1.6; margin-bottom: 22px; }
+.modal-layout.hidden { display: none; }
+.modal-box { background: #1c1f26; border: 2px solid #a482ff; border-radius: 20px; padding: 28px; max-width: 440px; width: calc(100% - 32px); text-align: center; box-shadow: 0 15px 40px rgba(0,0,0,0.7); }
+.modal-icon { font-size: 40px; margin-bottom: 10px; }
+.modal-title { font-size: 18px; font-weight: bold; color: #c9b8ff; margin-bottom: 12px; text-transform: uppercase; letter-spacing: 2px; }
+.modal-text { font-size: 15px; color: #cbd5e1; line-height: 1.6; margin-bottom: 20px; }
+.disclaimer-box { border-color: #f1c40f; }
+.disclaimer-box .modal-title { color: #f1c40f; }
 .btn-close-modal { display: block; padding: 14px 20px; font-size: 15px; background: #f1c40f; color: #111213; border: none; border-radius: 16px; font-weight: bold; cursor: pointer; width: 100%; transition: all 0.2s ease; }
 .btn-close-modal:hover { background: #d4ac0d; transform: translateY(-2px); }
+.btn-start { background: #50fa7b; color: #0d1a0f; }
+.btn-start:hover { background: #6dff91; }
 
-@media (max-width: 760px) {
-  #deck-column { flex-direction: row; width: 92vw; justify-content: center; flex-wrap: wrap; }
+.count-row { display: flex; gap: 8px; justify-content: center; margin-bottom: 16px; }
+.count-btn { width: 52px; height: 44px; border-radius: 12px; border: 2px solid #3b4252; background: #232830; color: #fff; font-size: 18px; font-weight: 700; cursor: pointer; }
+.count-btn.active { border-color: #a482ff; background: rgba(164,130,255,0.18); }
+.name-row { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+.name-row .dot { width: 16px; height: 16px; border-radius: 50%; flex: none; box-shadow: 0 0 8px currentColor; }
+.name-row input { flex: 1; background: #111213; border: 2px solid #2e3440; border-radius: 10px; color: #f1f2f3; padding: 10px 12px; font-size: 14px; font-family: inherit; }
+.name-row input:focus { outline: none; border-color: #a482ff; }
+#setup-names { margin-bottom: 18px; }
+.card-box.chance { border-color: #a482ff; }
+.card-box.community { border-color: #8be9fd; }
+.card-box.community .modal-title { color: #8be9fd; }
+.card-text { font-size: 18px; line-height: 1.5; color: #f1f2f3; margin-bottom: 22px; min-height: 54px; }
+
+@media (max-width: 1179px) {
+  #left-col, #right-col { width: calc(50% - 10px); min-width: 260px; flex: 1 1 260px; order: 1; }
+  #bottom-row { flex-wrap: wrap; }
 }
 </style>
 </head>
@@ -54,40 +142,95 @@ body { font-family: sans-serif; background: #111213; color: #f1f2f3; margin: 0; 
 <a class="hub-link" href="../">← Игротека</a>
 
 <div id="game-layout">
+
+  <aside id="left-col">
+    <div class="panel" id="others-panel">
+      <h3>Соперники</h3>
+      <div id="others-list"></div>
+    </div>
+    <div class="panel push-down" id="me-panel">
+      <div id="me-head"><span class="dot" id="me-dot"></span><span id="me-name">—</span></div>
+      <div id="me-total">0 ₽</div>
+    </div>
+    <div class="panel" id="notes-panel">
+      <h3>Купюры</h3>
+      <div id="notes"></div>
+    </div>
+  </aside>
+
   <div id="board-wrap">
     <canvas id="board-canvas" width="1600" height="1600"></canvas>
-    <div class="rotate-controls">
-      <button class="btn-rotate" onclick="rotateBoard()">↻ Повернуть доску</button>
-      <div class="side-indicator">Сторона: <b id="active-side-label">1</b>/4</div>
+    <div id="bottom-row">
+      <div class="panel" id="dice-box">
+        <div class="die" id="die1"></div>
+        <div class="die" id="die2"></div>
+        <div id="roll-info"><div id="roll-sum">–</div><div id="roll-note"></div></div>
+      </div>
+      <div class="panel" id="action-box">
+        <div id="turn-line"><span id="turn-dot"></span><span>Ходит:</span><span id="turn-name">—</span></div>
+        <div id="prompt"></div>
+        <div id="buttons"></div>
+        <div id="log"></div>
+      </div>
+      <div id="side-controls">
+        <button class="btn btn-rotate" onclick="rotateBoard()">↻ Повернуть доску</button>
+        <div class="side-indicator">Сторона: <b id="active-side-label">1</b>/4</div>
+        <button class="btn btn-small" onclick="restartGame()">↺ Новая игра</button>
+      </div>
     </div>
   </div>
 
-  <div id="deck-column">
-    <div class="deck-card">
-      <span class="deck-icon">❓</span>
-      <div class="deck-label">Колода</div>
-      <div class="deck-name">Шанс</div>
+  <aside id="right-col">
+    <div id="decks-row">
+      <div class="deck-card"><span class="deck-icon">❓</span><div class="deck-name">Шанс</div><div class="deck-count" id="chance-count"></div></div>
+      <div class="deck-card"><span class="deck-icon">🏦</span><div class="deck-name">Казна</div><div class="deck-count" id="community-count"></div></div>
     </div>
-    <div class="deck-card">
-      <span class="deck-icon">🏦</span>
-      <div class="deck-label">Колода</div>
-      <div class="deck-name">Казна</div>
+    <div class="panel" id="props-panel">
+      <h3>Владения</h3>
+      <div id="props-list"></div>
     </div>
-    <div class="deck-hint">Колоды всегда сбоку от стола — не вращаются вместе с доской, их видно с любой стороны</div>
-  </div>
+  </aside>
+
 </div>
 
-<div class="stub-note">Ранний каркас доски. Дальше по плану: деньги, покупка улиц, дома/отели и содержимое карт «Шанс»/«Казна».</div>
-
 <div id="disclaimer-modal" class="modal-layout">
-  <div class="disclaimer-box">
-    <div class="disclaimer-icon">💻</div>
-    <div class="disclaimer-title">Лучше играть с компьютера</div>
-    <div class="disclaimer-text">Тут большая доска с мелкими деталями и поворотом на 90°. На телефоне будет тесно и неудобно. Рекомендуем открыть игру на компьютере или ноутбуке.</div>
+  <div class="modal-box disclaimer-box">
+    <div class="modal-icon">💻</div>
+    <div class="modal-title">Лучше играть с компьютера</div>
+    <div class="modal-text">Тут большая доска с мелкими деталями и поворотом на 90°. На телефоне будет тесно и неудобно. Рекомендуем открыть игру на компьютере или ноутбуке.</div>
     <button class="btn-close-modal" onclick="closeDisclaimer()">Понял, продолжить</button>
   </div>
 </div>
 
+<div id="setup-modal" class="modal-layout hidden">
+  <div class="modal-box">
+    <div class="modal-title">Новая игра</div>
+    <div class="modal-text" style="margin-bottom:12px">Сколько игроков за одним экраном?</div>
+    <div class="count-row" id="count-row"></div>
+    <div id="setup-names"></div>
+    <button class="btn-close-modal btn-start" onclick="startFromSetup()">Начать игру</button>
+  </div>
+</div>
+
+<div id="card-modal" class="modal-layout hidden">
+  <div class="modal-box card-box" id="card-box">
+    <div class="modal-icon" id="card-icon"></div>
+    <div class="modal-title" id="card-title"></div>
+    <div class="card-text" id="card-text"></div>
+    <button class="btn-close-modal btn-start" id="card-ok">Понятно</button>
+  </div>
+</div>
+
+<div id="winner-modal" class="modal-layout hidden">
+  <div class="modal-box">
+    <div class="modal-icon">🏆</div>
+    <div class="modal-title">Победитель</div>
+    <div class="modal-text" id="winner-text"></div>
+    <button class="btn-close-modal btn-start" onclick="location.reload()">Сыграть ещё раз</button>
+  </div>
+</div>
+
 <script src="game.js"></script>
+<script src="logic.js"></script>
 </body>
 </html>
