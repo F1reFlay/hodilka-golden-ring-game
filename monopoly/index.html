@@ -10,93 +10,120 @@
 <link rel="stylesheet" href="../hub-link.css">
 <title>Монополия</title>
 <style>
-:root { color-scheme: dark; }
+:root { color-scheme: dark; --board: min(800px, calc(100vw - 40px), max(440px, calc(100vh - 310px))); }
 * { box-sizing: border-box; }
-body { font-family: sans-serif; background: #111213; color: #f1f2f3; margin: 0; padding: 56px 20px 20px; display: flex; flex-direction: column; align-items: center; }
+body { font-family: sans-serif; background: #111213; color: #f1f2f3; margin: 0; padding: 56px 20px 24px; display: flex; flex-direction: column; align-items: center; }
 button { font-family: inherit; }
+.hidden { display: none !important; }
 
-#game-layout { display: flex; align-items: stretch; gap: 20px; flex-wrap: wrap; justify-content: center; width: 100%; }
+/* единый блок: сверху доска, снизу меню */
+#game-block { width: min(1060px, 100%); display: flex; flex-direction: column; align-items: center; gap: 14px; }
 
 /* --- доска --- */
-#board-wrap { display: flex; flex-direction: column; align-items: center; gap: 14px; order: 0; }
-#board-canvas { width: min(800px, calc(100vw - 40px), calc(100vh - 220px)); height: auto; aspect-ratio: 1; border: 4px solid #2e3440; background: #16181c; border-radius: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.5); }
-@media (min-width: 1180px) {
-  #board-canvas { width: min(800px, calc(100vw - 600px), calc(100vh - 220px)); min-width: 520px; }
-}
+#board-stage { position: relative; width: var(--board); aspect-ratio: 1; border: 4px solid #2e3440; background: #16181c; border-radius: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.5); container-type: inline-size; }
+#board-canvas { display: block; width: 100%; height: 100%; border-radius: 16px; }
+#link-svg { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 3; }
+#link-line { stroke: #a482ff; stroke-width: 2; stroke-dasharray: 5 4; fill: none; filter: drop-shadow(0 0 4px #a482ff); }
+#link-dot { fill: #c9b8ff; filter: drop-shadow(0 0 5px #a482ff); }
 
-/* --- нижний ряд: кубики, подсказки, кнопки --- */
-#bottom-row { display: flex; gap: 14px; width: 100%; align-items: stretch; }
-.panel { background: #16181c; border: 2px solid #2e3440; border-radius: 18px; padding: 14px; box-shadow: inset 0 0 14px rgba(164,130,255,0.06); }
-.panel h3 { margin: 0 0 10px; font-size: 11px; letter-spacing: 3px; text-transform: uppercase; color: #8b8f98; font-weight: 700; }
+.deck-mini { position: absolute; top: 50%; transform: translate(-50%, -50%); width: 9.5cqw; padding: 1.2cqw 0.4cqw; border-radius: 1.6cqw; background: #16181c; border: 0.3cqw solid #2e3440; display: flex; flex-direction: column; align-items: center; gap: 0.2cqw; box-shadow: 0 0.8cqw 2cqw rgba(0,0,0,0.45); z-index: 2; }
+.deck-mini .deck-icon { font-size: 3.6cqw; line-height: 1; }
+.deck-mini .deck-name { font-size: 1.5cqw; font-weight: 800; color: #8be9fd; }
+.deck-mini .deck-count { font-size: 1.1cqw; color: #6b7280; letter-spacing: 0.1cqw; }
+#deck-chance { left: 21.5%; }
+#deck-community { left: 78.5%; }
 
-#dice-box { display: flex; align-items: center; gap: 12px; padding: 12px 16px; }
-.die { width: 58px; height: 58px; border-radius: 14px; background: linear-gradient(145deg, #ffffff, #cfd4de); display: grid; grid-template-columns: repeat(3, 1fr); grid-template-rows: repeat(3, 1fr); padding: 9px; box-shadow: 0 0 16px rgba(164,130,255,0.35), inset 0 -3px 6px rgba(0,0,0,0.18); }
+/* всплывающий экранчик с информацией о клетке */
+#tile-info { position: absolute; left: 50%; transform: translateX(-50%); width: 42cqw; z-index: 4; --fs: 1.75cqw; max-height: 26cqw; overflow: hidden; border-radius: 1.4cqw; box-shadow: 0 1cqw 3cqw rgba(0,0,0,0.6), 0 0 2.4cqw rgba(164,130,255,0.25); animation: infoIn 0.18s ease-out; }
+@keyframes infoIn { from { opacity: 0; margin-top: 8px; } to { opacity: 1; margin-top: 0; } }
+
+/* карточка клетки (в экранчике и в предпросмотре владений) */
+.tile-card { font-size: var(--fs, 13px); background: #1c1f26; border: 0.14em solid #3b4252; border-radius: 0.8em; color: #e5e9f0; overflow: hidden; line-height: 1.25; }
+.tc-head { display: flex; justify-content: space-between; align-items: center; gap: 0.6em; padding: 0.55em 0.8em; font-weight: 800; background: var(--g, #3C3489); color: #0d0e10; }
+.tc-head.light { color: #ffffff; }
+.tc-sub { font-weight: 700; opacity: 0.8; font-size: 0.85em; white-space: nowrap; }
+.tc-body { padding: 0.55em 0.85em 0.6em; }
+.tc-text { color: #cbd5e1; }
+.tc-rows { display: grid; grid-template-columns: 1fr auto 1fr auto; column-gap: 1em; row-gap: 0.2em; }
+.tc-rows span:nth-child(4n+2), .tc-rows span:nth-child(4n) { text-align: right; font-weight: 700; color: #8be9fd; }
+.tc-foot { display: flex; justify-content: space-between; gap: 0.6em; margin-top: 0.5em; padding-top: 0.45em; border-top: 1px solid #2e3440; color: #9aa3b2; font-size: 0.92em; }
+.tc-owner { display: inline-flex; align-items: center; gap: 0.4em; }
+.tc-owner i { width: 0.8em; height: 0.8em; border-radius: 50%; background: var(--pc); display: inline-block; }
+.tc-built { font-size: 1.15em; letter-spacing: 0.05em; min-height: 1.3em; }
+
+/* --- меню под доской --- */
+#menu { width: 100%; display: grid; grid-template-columns: 250px 1fr 320px; gap: 14px; align-items: stretch; }
+.panel { background: #16181c; border: 2px solid #2e3440; border-radius: 18px; padding: 12px 14px; box-shadow: inset 0 0 14px rgba(164,130,255,0.06); min-width: 0; }
+.panel h3 { margin: 0 0 8px; font-size: 11px; letter-spacing: 3px; text-transform: uppercase; color: #8b8f98; font-weight: 700; }
+
+/* деньги */
+#money-col { display: flex; flex-direction: column; gap: 8px; }
+#others-list { display: flex; flex-direction: column; gap: 5px; }
+.player-row { display: flex; align-items: center; gap: 8px; font-size: 13px; }
+.player-row .dot, #me-head .dot, #turn-dot { width: 12px; height: 12px; border-radius: 50%; flex: none; box-shadow: 0 0 8px currentColor; }
+.player-row .pname { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: #9aa3b2; }
+.player-row .pmoney { font-weight: 700; color: #f1f2f3; }
+.player-row.bankrupt { opacity: 0.4; text-decoration: line-through; }
+.muted { color: #6b7280; font-size: 12px; }
+#me-head { display: flex; align-items: center; gap: 8px; font-size: 12px; color: #9aa3b2; }
+#me-total { font-family: 'Unbounded', sans-serif; font-weight: 900; font-size: 26px; color: #50fa7b; text-shadow: 0 0 14px rgba(80,250,123,0.35); }
+#notes { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin-top: auto; }
+.note { height: 32px; border-radius: 6px; display: flex; align-items: center; justify-content: space-between; padding: 0 7px; color: #111213; font-weight: 900; font-size: 13px; font-family: 'Unbounded', sans-serif; box-shadow: inset 0 0 0 2px rgba(0,0,0,0.12), 0 2px 5px rgba(0,0,0,0.4); transition: opacity 0.3s ease; }
+.note small { font-family: sans-serif; font-size: 10px; font-weight: 700; background: rgba(0,0,0,0.28); color: #fff; border-radius: 7px; padding: 1px 5px; }
+.note.zero { opacity: 0.22; }
+
+/* ход: кубики, вопрос, кнопки, строка событий */
+#turn-col { display: flex; flex-direction: column; gap: 8px; position: relative; }
+#turn-line { display: flex; align-items: center; gap: 8px; font-size: 11px; letter-spacing: 2px; text-transform: uppercase; color: #8b8f98; }
+#turn-dot { background: #50fa7b; }
+#turn-name { color: #f1f2f3; font-weight: 700; }
+#turn-tools { margin-left: auto; display: flex; gap: 6px; }
+#dice-row { display: flex; align-items: center; gap: 10px; }
+.die { width: 50px; height: 50px; border-radius: 12px; background: linear-gradient(145deg, #ffffff, #cfd4de); display: grid; grid-template-columns: repeat(3, 1fr); grid-template-rows: repeat(3, 1fr); padding: 8px; box-shadow: 0 0 14px rgba(164,130,255,0.35), inset 0 -3px 6px rgba(0,0,0,0.18); flex: none; }
 .die .pip { width: 100%; height: 100%; border-radius: 50%; background: transparent; transform: scale(0.8); }
 .die .pip.on { background: #16181c; }
 .die.rolling { animation: tumble 0.4s linear infinite; }
 @keyframes tumble { 0% { transform: rotate(0deg) scale(1); } 50% { transform: rotate(180deg) scale(1.15); } 100% { transform: rotate(360deg) scale(1); } }
-#roll-info { min-width: 62px; text-align: center; }
-#roll-sum { font-family: 'Unbounded', sans-serif; font-weight: 900; font-size: 34px; color: #c9b8ff; text-shadow: 0 0 14px rgba(164,130,255,0.6); line-height: 1; }
-#roll-note { font-size: 11px; color: #8b8f98; margin-top: 6px; letter-spacing: 1px; text-transform: uppercase; min-height: 13px; }
-
-#action-box { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 8px; padding: 12px 16px; }
-#turn-line { display: flex; align-items: center; gap: 8px; font-size: 12px; letter-spacing: 2px; text-transform: uppercase; color: #8b8f98; }
-#turn-dot { width: 12px; height: 12px; border-radius: 50%; background: #50fa7b; box-shadow: 0 0 8px currentColor; flex: none; }
-#turn-name { color: #f1f2f3; font-weight: 700; }
-#prompt { font-size: 15px; font-weight: 700; color: #f1f2f3; min-height: 20px; }
-#buttons { display: flex; gap: 8px; flex-wrap: wrap; }
-.btn { background: #232830; color: #fff; border: 2px solid #3b4252; border-radius: 14px; padding: 10px 18px; font-size: 14px; font-weight: bold; cursor: pointer; transition: all 0.2s ease; }
+#roll-info { display: flex; align-items: baseline; gap: 8px; min-width: 0; }
+#roll-sum { font-family: 'Unbounded', sans-serif; font-weight: 900; font-size: 30px; color: #c9b8ff; text-shadow: 0 0 14px rgba(164,130,255,0.6); line-height: 1; }
+#roll-note { font-size: 11px; color: #8b8f98; letter-spacing: 1px; text-transform: uppercase; }
+#prompt { font-size: 14px; font-weight: 700; color: #f1f2f3; min-height: 18px; }
+#buttons { display: flex; gap: 8px; flex-wrap: wrap; min-height: 40px; }
+.btn { background: #232830; color: #fff; border: 2px solid #3b4252; border-radius: 14px; padding: 9px 16px; font-size: 14px; font-weight: bold; cursor: pointer; transition: all 0.2s ease; }
 .btn:hover:not(:disabled) { border-color: #a482ff; background: #1c1f26; transform: translateY(-2px); }
 .btn:active:not(:disabled) { transform: translateY(0) scale(0.96); }
 .btn:disabled { opacity: 0.4; cursor: not-allowed; }
 .btn.primary { background: #50fa7b; border-color: #50fa7b; color: #0d1a0f; }
 .btn.primary:hover:not(:disabled) { background: #6dff91; border-color: #6dff91; }
-#log { font-size: 12px; color: #6b7280; line-height: 1.5; max-height: 72px; overflow: hidden; }
-#log div:first-child { color: #9aa3b2; }
+.btn-small { padding: 5px 10px; font-size: 12px; border-radius: 10px; }
 
-#side-controls { display: flex; flex-direction: column; gap: 8px; justify-content: center; }
-.btn-rotate { white-space: nowrap; }
-.side-indicator { font-size: 13px; color: #9aa3b2; text-align: center; }
-.side-indicator b { color: #50fa7b; }
-.btn-small { padding: 8px 14px; font-size: 12px; }
+/* строка событий (консоль): одна строка, разворачивается вверх */
+#log-bar { display: flex; align-items: center; gap: 8px; margin-top: auto; padding: 6px 10px; border-radius: 10px; background: #111213; border: 1px solid #2e3440; cursor: pointer; font-size: 12px; color: #9aa3b2; min-width: 0; }
+#log-bar:hover { border-color: #a482ff; }
+#log-last { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+#log-arrow { color: #6b7280; transition: transform 0.2s ease; }
+#log-bar.open #log-arrow { transform: rotate(180deg); }
+#log-full { position: absolute; left: 0; right: 0; bottom: calc(100% - 6px); max-height: 240px; overflow-y: auto; background: #1c1f26; border: 2px solid #a482ff; border-radius: 14px; padding: 10px 14px; font-size: 12px; line-height: 1.7; color: #9aa3b2; box-shadow: 0 10px 30px rgba(0,0,0,0.6); z-index: 20; }
+#log-full div:first-child { color: #f1f2f3; }
 
-/* --- боковые колонки --- */
-#left-col, #right-col { display: flex; flex-direction: column; gap: 14px; width: 240px; flex: none; order: 0; }
-#left-col .push-down { margin-top: auto; }
-
-#others-list { display: flex; flex-direction: column; gap: 8px; }
-.player-row { display: flex; align-items: center; gap: 10px; font-size: 14px; }
-.player-row .dot { width: 14px; height: 14px; border-radius: 50%; flex: none; box-shadow: 0 0 8px currentColor; }
-.player-row .pname { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.player-row .pmoney { font-weight: 700; color: #f1f2f3; }
-.player-row.bankrupt { opacity: 0.4; text-decoration: line-through; }
-.muted { color: #6b7280; font-size: 13px; }
-
-#me-panel { position: relative; }
-#me-head { display: flex; align-items: center; gap: 8px; font-size: 13px; color: #9aa3b2; }
-#me-head .dot { width: 14px; height: 14px; border-radius: 50%; box-shadow: 0 0 8px currentColor; }
-#me-total { font-family: 'Unbounded', sans-serif; font-weight: 900; font-size: 30px; color: #50fa7b; text-shadow: 0 0 14px rgba(80,250,123,0.35); margin-top: 6px; }
-
-#notes { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-.note { position: relative; height: 44px; border-radius: 8px; display: flex; align-items: center; justify-content: space-between; padding: 0 10px; color: #111213; font-weight: 900; font-size: 16px; font-family: 'Unbounded', sans-serif; box-shadow: inset 0 0 0 2px rgba(0,0,0,0.12), 0 2px 6px rgba(0,0,0,0.4); transition: opacity 0.3s ease; }
-.note small { font-family: sans-serif; font-size: 12px; font-weight: 700; background: rgba(0,0,0,0.25); color: #fff; border-radius: 8px; padding: 2px 7px; }
-.note.zero { opacity: 0.22; }
-
-.deck-card { background: #16181c; border: 2px solid #2e3440; border-radius: 18px; flex: 1; height: 120px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; box-shadow: 0 8px 20px rgba(0,0,0,0.4); transition: border-color 0.2s ease, transform 0.2s ease; }
-.deck-card:hover { border-color: #a482ff; transform: translateY(-3px); }
-.deck-icon { font-size: 36px; line-height: 1; }
-.deck-name { font-size: 18px; font-weight: bold; color: #8be9fd; }
-.deck-count { font-size: 11px; color: #6b7280; letter-spacing: 1px; text-transform: uppercase; }
-#decks-row { display: flex; gap: 12px; }
-
-#props-panel { flex: 1; min-height: 200px; display: flex; flex-direction: column; }
-#props-list { display: flex; flex-direction: column; gap: 10px; overflow-y: auto; max-height: 380px; }
-.props-card { border-left: 4px solid var(--pc); padding-left: 10px; }
-.props-card.current { background: rgba(255,255,255,0.03); }
-.props-title { font-size: 13px; font-weight: 700; margin-bottom: 6px; display: flex; justify-content: space-between; gap: 6px; }
-.chips { display: flex; flex-wrap: wrap; gap: 4px; }
-.chip { display: inline-flex; align-items: center; gap: 5px; padding: 2px 7px 2px 0; border-radius: 6px; background: #1c1f26; border: 1.5px solid var(--pc); font-size: 11px; color: #e5e9f0; overflow: hidden; }
-.chip i { width: 5px; align-self: stretch; background: var(--g); display: block; }
+/* владения: стопка карточек (видны только названия) */
+#props-col { display: flex; flex-direction: column; min-height: 0; }
+#props-tabs { display: flex; gap: 6px; margin-bottom: 8px; flex-wrap: wrap; }
+.ptab { display: inline-flex; align-items: center; gap: 6px; padding: 3px 9px; border-radius: 999px; border: 1.5px solid #2e3440; background: #111213; color: #9aa3b2; font-size: 12px; cursor: pointer; max-width: 120px; }
+.ptab i { width: 9px; height: 9px; border-radius: 50%; background: var(--pc); display: inline-block; flex: none; }
+.ptab span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ptab.active { border-color: var(--pc); color: #f1f2f3; }
+#props-pile { display: flex; flex-direction: column; overflow-y: auto; max-height: 150px; padding-right: 4px; }
+.pstrip { position: relative; display: flex; align-items: center; gap: 8px; height: 26px; flex: none; margin-top: -3px; padding: 0 8px 0 0; border-radius: 8px 8px 0 0; background: #1c1f26; border: 1.5px solid var(--pc); border-bottom-color: transparent; font-size: 12px; cursor: pointer; overflow: hidden; box-shadow: 0 -2px 6px rgba(0,0,0,0.35); }
+.pstrip:first-child { margin-top: 0; }
+.pstrip i { width: 7px; align-self: stretch; background: var(--g); flex: none; }
+.pstrip .pname { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: #e5e9f0; font-weight: 600; }
+.pstrip .ph { font-size: 11px; white-space: nowrap; }
+.pstrip:hover { background: #232830; }
+.pbuild { border: none; border-radius: 6px; background: #50fa7b; color: #0d1a0f; font-weight: 800; font-size: 11px; padding: 2px 6px; cursor: pointer; white-space: nowrap; }
+.pbuild:hover { background: #6dff91; }
+#card-preview { position: fixed; z-index: 1200; width: 300px; --fs: 13px; transition: opacity 0.15s ease, transform 0.15s ease; }
+#card-preview.hidden { opacity: 0; }
 
 /* --- всплывающие суммы --- */
 .float-money { position: fixed; z-index: 1500; pointer-events: none; font-weight: 900; font-size: 18px; animation: floatUp 1.3s ease-out forwards; text-shadow: 0 2px 8px rgba(0,0,0,0.8); }
@@ -105,8 +132,7 @@ button { font-family: inherit; }
 @keyframes floatUp { from { transform: translateY(0); opacity: 1; } to { transform: translateY(-36px); opacity: 0; } }
 
 /* --- окна --- */
-.modal-layout { display: flex; position: fixed; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.7); z-index: 1000; align-items: center; justify-content: center; }
-.modal-layout.hidden { display: none; }
+.modal-layout { display: flex; position: fixed; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.7); z-index: 2000; align-items: center; justify-content: center; }
 .modal-box { background: #1c1f26; border: 2px solid #a482ff; border-radius: 20px; padding: 28px; max-width: 440px; width: calc(100% - 32px); text-align: center; box-shadow: 0 15px 40px rgba(0,0,0,0.7); }
 .modal-icon { font-size: 40px; margin-bottom: 10px; }
 .modal-title { font-size: 18px; font-weight: bold; color: #c9b8ff; margin-bottom: 12px; text-transform: uppercase; letter-spacing: 2px; }
@@ -117,7 +143,6 @@ button { font-family: inherit; }
 .btn-close-modal:hover { background: #d4ac0d; transform: translateY(-2px); }
 .btn-start { background: #50fa7b; color: #0d1a0f; }
 .btn-start:hover { background: #6dff91; }
-
 .count-row { display: flex; gap: 8px; justify-content: center; margin-bottom: 16px; }
 .count-btn { width: 52px; height: 44px; border-radius: 12px; border: 2px solid #3b4252; background: #232830; color: #fff; font-size: 18px; font-weight: 700; cursor: pointer; }
 .count-btn.active { border-color: #a482ff; background: rgba(164,130,255,0.18); }
@@ -131,9 +156,9 @@ button { font-family: inherit; }
 .card-box.community .modal-title { color: #8be9fd; }
 .card-text { font-size: 18px; line-height: 1.5; color: #f1f2f3; margin-bottom: 22px; min-height: 54px; }
 
-@media (max-width: 1179px) {
-  #left-col, #right-col { width: calc(50% - 10px); min-width: 260px; flex: 1 1 260px; order: 1; }
-  #bottom-row { flex-wrap: wrap; }
+@media (max-width: 960px) {
+  #menu { grid-template-columns: 1fr; }
+  #props-pile { max-height: 190px; }
 }
 </style>
 </head>
@@ -141,57 +166,55 @@ button { font-family: inherit; }
 
 <a class="hub-link" href="../">← Игротека</a>
 
-<div id="game-layout">
+<div id="game-block">
 
-  <aside id="left-col">
-    <div class="panel" id="others-panel">
-      <h3>Соперники</h3>
+  <div id="board-stage">
+    <canvas id="board-canvas" width="1600" height="1600"></canvas>
+    <svg id="link-svg" viewBox="0 0 800 800" preserveAspectRatio="none"><line id="link-line" x1="0" y1="0" x2="0" y2="0"></line><circle id="link-dot" r="5" cx="0" cy="0"></circle></svg>
+    <div class="deck-mini" id="deck-chance"><span class="deck-icon">❓</span><div class="deck-name">Шанс</div><div class="deck-count" id="chance-count"></div></div>
+    <div class="deck-mini" id="deck-community"><span class="deck-icon">🏦</span><div class="deck-name">Казна</div><div class="deck-count" id="community-count"></div></div>
+    <div id="tile-info" class="hidden"></div>
+  </div>
+
+  <div id="menu">
+    <div class="panel" id="money-col">
       <div id="others-list"></div>
-    </div>
-    <div class="panel push-down" id="me-panel">
-      <div id="me-head"><span class="dot" id="me-dot"></span><span id="me-name">—</span></div>
-      <div id="me-total">0 ₽</div>
-    </div>
-    <div class="panel" id="notes-panel">
-      <h3>Купюры</h3>
+      <div>
+        <div id="me-head"><span class="dot" id="me-dot"></span><span id="me-name">—</span></div>
+        <div id="me-total">0 ₽</div>
+      </div>
       <div id="notes"></div>
     </div>
-  </aside>
 
-  <div id="board-wrap">
-    <canvas id="board-canvas" width="1600" height="1600"></canvas>
-    <div id="bottom-row">
-      <div class="panel" id="dice-box">
+    <div class="panel" id="turn-col">
+      <div id="turn-line">
+        <span id="turn-dot"></span><span>Ходит:</span><span id="turn-name">—</span>
+        <span id="turn-tools">
+          <button class="btn btn-small" onclick="rotateBoard()" title="Повернуть доску на 90°">↻ <span id="active-side-label">1</span>/4</button>
+          <button class="btn btn-small" onclick="restartGame()" title="Новая игра">↺</button>
+        </span>
+      </div>
+      <div id="dice-row">
         <div class="die" id="die1"></div>
         <div class="die" id="die2"></div>
         <div id="roll-info"><div id="roll-sum">–</div><div id="roll-note"></div></div>
       </div>
-      <div class="panel" id="action-box">
-        <div id="turn-line"><span id="turn-dot"></span><span>Ходит:</span><span id="turn-name">—</span></div>
-        <div id="prompt"></div>
-        <div id="buttons"></div>
-        <div id="log"></div>
-      </div>
-      <div id="side-controls">
-        <button class="btn btn-rotate" onclick="rotateBoard()">↻ Повернуть доску</button>
-        <div class="side-indicator">Сторона: <b id="active-side-label">1</b>/4</div>
-        <button class="btn btn-small" onclick="restartGame()">↺ Новая игра</button>
-      </div>
+      <div id="prompt"></div>
+      <div id="buttons"></div>
+      <div id="log-bar" onclick="toggleLog()"><span>💬</span><span id="log-last">Игра ещё не началась</span><span id="log-arrow">▲</span></div>
+      <div id="log-full" class="hidden"></div>
+    </div>
+
+    <div class="panel" id="props-col">
+      <h3>Владения</h3>
+      <div id="props-tabs"></div>
+      <div id="props-pile"></div>
     </div>
   </div>
 
-  <aside id="right-col">
-    <div id="decks-row">
-      <div class="deck-card"><span class="deck-icon">❓</span><div class="deck-name">Шанс</div><div class="deck-count" id="chance-count"></div></div>
-      <div class="deck-card"><span class="deck-icon">🏦</span><div class="deck-name">Казна</div><div class="deck-count" id="community-count"></div></div>
-    </div>
-    <div class="panel" id="props-panel">
-      <h3>Владения</h3>
-      <div id="props-list"></div>
-    </div>
-  </aside>
-
 </div>
+
+<div id="card-preview" class="hidden"></div>
 
 <div id="disclaimer-modal" class="modal-layout">
   <div class="modal-box disclaimer-box">

@@ -85,14 +85,15 @@ let rafId = 0;
 
 function getTileRectRaw(index) {
     const i = ((index % 40) + 40) % 40;
-    if (i === 0)  return { x: 0, y: BOARD - D, w: D, h: D, corner: true };
-    if (i === 10) return { x: BOARD - D, y: BOARD - D, w: D, h: D, corner: true };
-    if (i === 20) return { x: BOARD - D, y: 0, w: D, h: D, corner: true };
-    if (i === 30) return { x: 0, y: 0, w: D, h: D, corner: true };
-    if (i < 10)  return { x: D + (i - 1) * W, y: BOARD - D, w: W, h: D, side: "bottom" };
-    if (i < 20)  return { x: BOARD - D, y: BOARD - D - (i - 10) * W, w: D, h: W, side: "right" };
-    if (i < 30)  return { x: BOARD - D - (i - 20) * W, y: 0, w: W, h: D, side: "top" };
-    return { x: 0, y: D + (i - 31) * W, w: D, h: W, side: "left" };
+    // ход идёт по часовой стрелке: СТАРТ справа внизу, дальше влево по нижней стороне, вверх по левой, вправо по верхней, вниз по правой
+    if (i === 0)  return { x: BOARD - D, y: BOARD - D, w: D, h: D, corner: true };
+    if (i === 10) return { x: 0, y: BOARD - D, w: D, h: D, corner: true };
+    if (i === 20) return { x: 0, y: 0, w: D, h: D, corner: true };
+    if (i === 30) return { x: BOARD - D, y: 0, w: D, h: D, corner: true };
+    if (i < 10)  return { x: BOARD - D - i * W, y: BOARD - D, w: W, h: D, side: "bottom" };
+    if (i < 20)  return { x: 0, y: BOARD - D - (i - 10) * W, w: D, h: W, side: "left" };
+    if (i < 30)  return { x: D + (i - 21) * W, y: 0, w: W, h: D, side: "top" };
+    return { x: BOARD - D, y: D + (i - 31) * W, w: D, h: W, side: "right" };
 }
 
 function getTileRect(index) {
@@ -169,14 +170,37 @@ function rotateBoard() {
         const eased = t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
         currentAngle = startAngle + (targetAngle - startAngle) * eased;
         drawBoard();
+        if (typeof onBoardRotate === "function") onBoardRotate();
         if (t < 1) { requestAnimationFrame(frame); }
     }
     requestAnimationFrame(frame);
 }
 
+// Центр клетки на экране (в координатах доски 0..BOARD) с учётом поворота доски.
+function tileCenterOnScreen(index) {
+    const r = getTileRect(index);
+    const dx = r.x + r.w / 2 - BOARD / 2, dy = r.y + r.h / 2 - BOARD / 2;
+    return {
+        x: BOARD / 2 + dx * Math.cos(currentAngle) - dy * Math.sin(currentAngle),
+        y: BOARD / 2 + dx * Math.sin(currentAngle) + dy * Math.cos(currentAngle)
+    };
+}
+
+// Какая клетка под точкой (px, py) в координатах доски на экране; -1, если никакая.
+function tileAtScreenPoint(px, py) {
+    const dx = px - BOARD / 2, dy = py - BOARD / 2;
+    const x = BOARD / 2 + dx * Math.cos(-currentAngle) - dy * Math.sin(-currentAngle);
+    const y = BOARD / 2 + dx * Math.sin(-currentAngle) + dy * Math.cos(-currentAngle);
+    for (let i = 0; i < 40; i++) {
+        const r = getTileRectRaw(i);
+        if (x >= r.x && x <= r.x + r.w && y >= r.y && y <= r.y + r.h) return i;
+    }
+    return -1;
+}
+
 // Рисует содержимое клетки в её собственных координатах: центр (0,0), «вниз» (+y) = к внешнему краю доски.
 // lw - длина клетки вдоль стороны, lh - глубина клетки (от центра доски наружу).
-function drawTileContent(tile, lw, lh) {
+function drawTileContent(tile, lw, lh, houses) {
     const isCorner = tile.group === "corner";
     const textW = lw - 10;
 
@@ -206,8 +230,20 @@ function drawTileContent(tile, lw, lh) {
         ctx.font = "22px sans-serif";
         ctx.fillText(tile.emoji, 0, -lh / 2 + 24);
     }
-    // с иконкой название ниже, без иконки - выше
-    const nameY = tile.emoji ? -4 : -14;
+    // дома и отель - в свободной верхней части клетки (у внутреннего края)
+    if (houses > 0) {
+        ctx.fillStyle = "#ffffff";
+        if (houses >= 5) {
+            ctx.font = "17px sans-serif";
+            ctx.fillText("🏨", 0, -lh / 2 + 11);
+        } else {
+            ctx.font = "12px sans-serif";
+            for (let k = 0; k < houses; k++) ctx.fillText("🏠", (k - (houses - 1) / 2) * 13, -lh / 2 + 10);
+        }
+    }
+    // с иконкой название ниже, без иконки - выше; двухстрочное название сдвинуто вниз, чтобы не задевать фишки
+    const twoLines = (tile.label || "").indexOf("\n") !== -1;
+    const nameY = tile.emoji ? -4 : (twoLines ? -3 : -10);
     drawFittedText(tile.label || tile.name, 0, nameY, textW, 12.5, 8.5, 2, "600", "sans-serif");
 
     if (tile.hint) {
@@ -236,7 +272,8 @@ function tokenWorldPos(tileIdx, slot, count) {
     const lh = sideways ? r.w : r.h;
     const spacing = corner ? 18 : 12.5;
     const lx = (slot - (count - 1) / 2) * spacing;
-    const ly = corner ? 0 : -lh / 2 + 13;
+    // на улицах фишки ниже домов, на остальных клетках у самого внутреннего края
+    const ly = corner ? 0 : (groupColors[tiles[tileIdx].group] ? -30 : -lh / 2 + 13);
     const rot = corner ? 0 : getSideRotation(r.side);
     const cx = r.x + r.w / 2, cy = r.y + r.h / 2;
     return {
@@ -430,7 +467,7 @@ function drawBoard() {
         ctx.save();
         ctx.translate(tcx, tcy);
         ctx.rotate(isCorner ? -currentAngle : getSideRotation(r.side));
-        drawTileContent(tile, lw, lh);
+        drawTileContent(tile, lw, lh, gameState ? (gameState.houses[i] || 0) : 0);
         ctx.restore();
 
         ctx.restore();

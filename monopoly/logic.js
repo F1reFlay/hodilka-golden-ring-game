@@ -1,5 +1,5 @@
 // Правила и интерфейс игры. Доска, фишки и анимации лежат в game.js.
-// Играют 2-4 человека за одним экраном по классическим правилам (дома/отели, обмен и залог добавим позже).
+// Играют 2-4 человека за одним экраном по классическим правилам (залог, обмен и аукцион добавим позже).
 
 const START_MONEY = 1500;
 const GO_SALARY = 200;
@@ -9,21 +9,32 @@ const GO_TO_JAIL_TILE = 30;
 const DEPOT_TILES = [5, 15, 25, 35];
 const UTILITY_TILES = [12, 28];
 const PLAYER_COLORS = ["#3ee0ff", "#b4f23d", "#ffffff", "#ffd23f"];
+const MAX_HOUSES = 4;   // больше 4 домов нельзя; отель (уровень 5) строится только на месте 4 домов
+const HOTEL_LEVEL = 5;
 
-// Базовая рента улиц без домов (клетка -> рента). Если у игрока вся цветовая группа, рента вдвое больше.
-const BASE_RENT = {
-    1: 2, 3: 4,
-    6: 6, 8: 6, 9: 8,
-    11: 10, 13: 10, 14: 12,
-    16: 14, 18: 14, 19: 16,
-    21: 18, 23: 18, 24: 20,
-    26: 22, 27: 22, 29: 24,
-    31: 26, 32: 26, 34: 28,
-    37: 35, 39: 50
+// Рента улиц: [без домов, 1 дом, 2, 3, 4 дома, отель]. Без домов, но при полной цветовой группе, рента вдвое больше.
+const RENTS = {
+    1: [2, 10, 30, 90, 160, 250],        3: [4, 20, 60, 180, 320, 450],
+    6: [6, 30, 90, 270, 400, 550],       8: [6, 30, 90, 270, 400, 550],      9: [8, 40, 100, 300, 450, 600],
+    11: [10, 50, 150, 450, 625, 750],    13: [10, 50, 150, 450, 625, 750],   14: [12, 60, 180, 500, 700, 900],
+    16: [14, 70, 200, 550, 750, 950],    18: [14, 70, 200, 550, 750, 950],   19: [16, 80, 220, 600, 800, 1000],
+    21: [18, 90, 250, 700, 875, 1050],   23: [18, 90, 250, 700, 875, 1050],  24: [20, 100, 300, 750, 925, 1100],
+    26: [22, 110, 330, 800, 975, 1150],  27: [22, 110, 330, 800, 975, 1150], 29: [24, 120, 360, 850, 1025, 1200],
+    31: [26, 130, 390, 900, 1100, 1275], 32: [26, 130, 390, 900, 1100, 1275], 34: [28, 150, 450, 1000, 1200, 1400],
+    37: [35, 175, 500, 1100, 1300, 1500], 39: [50, 200, 600, 1400, 1700, 2000]
 };
+const HOUSE_COST = { brown: 50, trio: 50, pink: 100, orange: 100, red: 150, yellow: 150, green: 200, blue: 200 };
+const GROUP_ORDER = ["brown", "trio", "pink", "orange", "red", "yellow", "green", "blue"];
 
 const NOTE_VALUES = [500, 100, 50, 10, 5, 1];
 const NOTE_COLORS = { 500: "#c4b5fd", 100: "#86efac", 50: "#7dd3fc", 10: "#ffd166", 5: "#ff9bd0", 1: "#e5e9f0" };
+
+const CORNER_INFO = {
+    0: "Каждый раз, когда проходишь СТАРТ, банк платит тебе 200 ₽.",
+    10: "Просто в гостях, если не отправили сюда. Иначе нужно выйти: дубль, штраф 50 ₽ или карта.",
+    20: "Привал. Можно отдохнуть, ничего не происходит.",
+    30: "Отправляйся на Штрафстоянку. СТАРТ не проходишь, 200 ₽ не получаешь."
+};
 
 // Карты: a - действие, v - значение. Половина классические, половина про программирование.
 const CHANCE_CARDS = [
@@ -63,6 +74,10 @@ const COMMUNITY_CARDS = [
 let lastDiceSum = 7;
 let logLines = [];
 let setupCount = 2;
+let infoTile = -1;     // клетка, на которой стоит фишка (экранчик с информацией)
+let hoverTile = -1;    // клетка под мышкой
+let propsView = null;  // чьи владения показаны (null = ходящего)
+let previewTimer = 0;
 
 // ---------- мелкие помощники ----------
 const $ = id => document.getElementById(id);
@@ -72,6 +87,8 @@ const money = n => n.toLocaleString("ru-RU") + " ₽";
 const cur = () => gameState.players[gameState.current];
 const idxOf = p => gameState.players.indexOf(p);
 const alivePlayers = () => gameState.players.filter(p => !p.bankrupt);
+const esc = s => String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+const houseEmoji = n => n >= HOTEL_LEVEL ? "🏨" : "🏠".repeat(n);
 
 function shuffle(list) {
     const a = list.slice();
@@ -89,13 +106,26 @@ function tileKind(i) {
     return "other";
 }
 
-// ---------- сообщения и кнопки ----------
-function say(text) {
-    logLines.unshift(text);
-    logLines = logLines.slice(0, 4);
-    $("log").innerHTML = logLines.map(l => "<div>" + l + "</div>").join("");
+function groupMembers(group) {
+    return tiles.map((t, i) => i).filter(i => tiles[i].group === group);
 }
 
+const housesOn = i => (gameState && gameState.houses[i]) || 0;
+
+// ---------- события (строка-консоль) ----------
+function say(text) {
+    logLines.unshift(text);
+    logLines = logLines.slice(0, 60);
+    $("log-last").textContent = text;
+    $("log-full").innerHTML = logLines.map(l => "<div>" + esc(l) + "</div>").join("");
+}
+
+function toggleLog() {
+    const open = $("log-full").classList.toggle("hidden") === false;
+    $("log-bar").classList.toggle("open", open);
+}
+
+// ---------- вопросы и кнопки ----------
 function setPrompt(text) { $("prompt").textContent = text || ""; }
 
 function renderButtons(list) {
@@ -111,13 +141,21 @@ function renderButtons(list) {
     });
 }
 
-// Показывает вопрос и кнопки, возвращает value нажатой кнопки.
+// Показывает вопрос и кнопки, возвращает value нажатой кнопки. Пока ждём ответ, можно строить дома.
 function ask(text, options) {
     return new Promise(resolve => {
         setPrompt(text);
+        gameState.idle = true;
+        renderProps();
         renderButtons(options.map(o => ({
             label: o.label, primary: o.primary, disabled: o.disabled,
-            onClick: () => { renderButtons([]); setPrompt(""); resolve(o.value); }
+            onClick: () => {
+                gameState.idle = false;
+                renderButtons([]);
+                setPrompt("");
+                renderProps();
+                resolve(o.value);
+            }
         })));
     });
 }
@@ -172,6 +210,108 @@ async function animateDice(a, b) {
     $("roll-note").textContent = a === b ? "дубль!" : "ходит на";
 }
 
+// ---------- карточка клетки (экранчик и предпросмотр владений) ----------
+function tileInfoHTML(idx) {
+    const t = tiles[idx];
+    const kind = tileKind(idx);
+    const owner = gameState ? gameState.owners[idx] : undefined;
+    const ownerHtml = owner !== undefined
+        ? '<span class="tc-owner"><i style="--pc:' + gameState.players[owner].color + '"></i>' + esc(gameState.players[owner].name) + "</span>"
+        : (t.price !== undefined ? "<span>Свободна</span>" : "<span></span>");
+    const bg = groupColors[t.group] || (t.group === "corner" ? "#3C3489" : "#4b5263");
+    const light = !groupColors[t.group];
+    const sub = t.price !== undefined ? money(t.price) : (t.tax !== undefined ? "налог " + money(t.tax) : "");
+    const head = '<div class="tc-head' + (light ? " light" : "") + '" style="--g:' + bg + '"><span>' +
+        (t.emoji ? t.emoji + " " : "") + esc(t.name) + '</span><span class="tc-sub">' + sub + "</span></div>";
+    let body = "";
+
+    if (kind === "street") {
+        const r = RENTS[idx];
+        const built = housesOn(idx);
+        const rows = [["Рента", r[0]], ["Вся группа", r[0] * 2], ["🏠", r[1]], ["🏠🏠", r[2]], ["🏠🏠🏠", r[3]], ["🏠×4", r[4]], ["🏨", r[5]]];
+        body = (built ? '<div class="tc-built">' + houseEmoji(built) + "</div>" : "") +
+            '<div class="tc-rows">' + rows.map(x => "<span>" + x[0] + "</span><span>" + x[1] + " ₽</span>").join("") + "</div>" +
+            '<div class="tc-foot"><span>Дом: ' + HOUSE_COST[t.group] + " ₽ · отель: " + HOUSE_COST[t.group] + " ₽</span>" + ownerHtml + "</div>";
+    } else if (kind === "depot") {
+        body = '<div class="tc-rows"><span>1 депо</span><span>25 ₽</span><span>2 депо</span><span>50 ₽</span><span>3 депо</span><span>100 ₽</span><span>4 депо</span><span>200 ₽</span></div>' +
+            '<div class="tc-foot"><span>Рента растёт с числом депо</span>' + ownerHtml + "</div>";
+    } else if (kind === "utility") {
+        body = '<div class="tc-text">Рента: 4 × число на кубиках. Если у владельца обе клетки (Электростанция и Водоканал): 10 ×.</div>' +
+            '<div class="tc-foot"><span></span>' + ownerHtml + "</div>";
+    } else if (t.tax !== undefined) {
+        body = '<div class="tc-text">Заплати банку ' + money(t.tax) + ".</div>";
+    } else if (t.name === "Шанс" || t.name === "Казна") {
+        body = '<div class="tc-text">Возьми верхнюю карту колоды «' + t.name + "» и выполни, что на ней написано.</div>";
+    } else {
+        body = '<div class="tc-text">' + (CORNER_INFO[idx] || "") + "</div>";
+    }
+    return '<div class="tile-card">' + head + '<div class="tc-body">' + body + "</div></div>";
+}
+
+// Экранчик в центре доски: если клетка в верхней половине, он над надписью «МОНОПОЛИЯ», иначе под ней; пунктир тянется к клетке.
+function refreshInfo() {
+    const idx = hoverTile >= 0 ? hoverTile : infoTile;
+    const box = $("tile-info");
+    if (idx < 0) {
+        box.classList.add("hidden");
+        $("link-line").setAttribute("x2", $("link-line").getAttribute("x1"));
+        $("link-dot").setAttribute("r", 0);
+        return;
+    }
+    const changed = box.dataset.shown !== String(idx) || box.classList.contains("hidden");
+    box.innerHTML = tileInfoHTML(idx);
+    box.dataset.shown = String(idx);
+    if (changed) {
+        box.style.animation = "none";
+        void box.offsetWidth;
+        box.style.animation = "";
+    }
+    box.classList.remove("hidden");
+    positionInfo(idx);
+}
+
+function positionInfo(idx) {
+    const box = $("tile-info");
+    const c = tileCenterOnScreen(idx);
+    const upper = c.y < BOARD / 2;
+    if (upper) { box.style.top = "auto"; box.style.bottom = (100 - 335 / 8) + "%"; }
+    else { box.style.bottom = "auto"; box.style.top = (465 / 8) + "%"; }
+
+    const stage = $("board-stage");
+    const sr = stage.getBoundingClientRect();
+    const unit = stage.clientWidth / BOARD;
+    const br = box.getBoundingClientRect();
+    const l = (br.left - sr.left - stage.clientLeft) / unit, r = (br.right - sr.left - stage.clientLeft) / unit;
+    const t = (br.top - sr.top - stage.clientTop) / unit, b = (br.bottom - sr.top - stage.clientTop) / unit;
+    const px = Math.min(Math.max(c.x, l), r), py = Math.min(Math.max(c.y, t), b);
+    const line = $("link-line");
+    line.setAttribute("x1", px); line.setAttribute("y1", py);
+    line.setAttribute("x2", c.x); line.setAttribute("y2", c.y);
+    $("link-dot").setAttribute("cx", c.x); $("link-dot").setAttribute("cy", c.y);
+    $("link-dot").setAttribute("r", 5);
+}
+
+function onBoardRotate() {
+    const idx = hoverTile >= 0 ? hoverTile : infoTile;
+    if (idx >= 0 && !$("tile-info").classList.contains("hidden")) positionInfo(idx);
+}
+
+function setInfoTile(idx) {
+    infoTile = idx;
+    refreshInfo();
+}
+
+function initHover() {
+    canvas.addEventListener("mousemove", e => {
+        const r = canvas.getBoundingClientRect();
+        const t = tileAtScreenPoint((e.clientX - r.left) / r.width * BOARD, (e.clientY - r.top) / r.height * BOARD);
+        if (t !== hoverTile) { hoverTile = t; refreshInfo(); }
+    });
+    canvas.addEventListener("mouseleave", () => {
+        if (hoverTile !== -1) { hoverTile = -1; refreshInfo(); }
+    });
+}
+
 // ---------- интерфейс: панели ----------
 function breakIntoNotes(amount) {
     const counts = {};
@@ -215,39 +355,87 @@ function renderAll() {
         $("notes").appendChild(n);
     });
 
-    $("props-list").innerHTML = "";
-    gameState.players.forEach((o, i) => {
-        const card = document.createElement("div");
-        card.className = "props-card" + (i === gameState.current ? " current" : "");
-        card.style.setProperty("--pc", o.color);
-        const title = document.createElement("div");
-        title.className = "props-title";
-        title.innerHTML = "<span></span><span class='muted'></span>";
-        title.children[0].textContent = o.name;
-        title.children[1].textContent = o.jailCards.length ? "🗝 ×" + o.jailCards.length : "";
-        card.appendChild(title);
-        const chips = document.createElement("div");
-        chips.className = "chips";
-        let any = false;
-        Object.keys(gameState.owners).map(Number).sort((a, b) => a - b).forEach(t => {
-            if (gameState.owners[t] !== i) return;
-            any = true;
-            const chip = document.createElement("span");
-            chip.className = "chip";
-            chip.style.setProperty("--pc", o.color);
-            chip.style.setProperty("--g", groupColors[tiles[t].group] || "#8b8f98");
-            chip.innerHTML = "<i></i>";
-            chip.appendChild(document.createTextNode(tiles[t].name));
-            chips.appendChild(chip);
-        });
-        if (!any) chips.innerHTML = '<span class="muted">пока ничего</span>';
-        card.appendChild(chips);
-        $("props-list").appendChild(card);
-    });
-
+    renderProps();
     $("chance-count").textContent = gameState.decks.chance.queue.length + " карт";
     $("community-count").textContent = gameState.decks.community.queue.length + " карт";
+    refreshInfo();
     requestDraw();
+}
+
+// Порядок в стопке: по цвету, потом депо и электричество.
+function pileOrder(i) {
+    const k = tileKind(i);
+    if (k === "street") return GROUP_ORDER.indexOf(tiles[i].group) * 100 + i;
+    if (k === "depot") return 1000 + i;
+    return 2000 + i;
+}
+
+function renderProps() {
+    if (!gameState) return;
+    const viewIdx = propsView === null ? gameState.current : propsView;
+    const viewer = gameState.players[viewIdx];
+
+    $("props-tabs").innerHTML = "";
+    gameState.players.forEach((o, i) => {
+        const tab = document.createElement("div");
+        tab.className = "ptab" + (i === viewIdx ? " active" : "");
+        tab.style.setProperty("--pc", o.color);
+        tab.innerHTML = "<i></i><span></span>";
+        tab.querySelector("span").textContent = o.name + (o.jailCards.length ? " 🗝" + o.jailCards.length : "");
+        tab.onclick = () => { propsView = i; renderProps(); };
+        $("props-tabs").appendChild(tab);
+    });
+
+    const pile = $("props-pile");
+    pile.innerHTML = "";
+    const mine = Object.keys(gameState.owners).map(Number).filter(t => gameState.owners[t] === viewIdx).sort((a, b) => pileOrder(a) - pileOrder(b));
+    if (!mine.length) pile.innerHTML = '<div class="muted">Пока ничего не куплено</div>';
+    mine.forEach(t => {
+        const strip = document.createElement("div");
+        strip.className = "pstrip";
+        strip.style.setProperty("--pc", viewer.color);
+        strip.style.setProperty("--g", groupColors[tiles[t].group] || "#8b8f98");
+        strip.innerHTML = "<i></i><span class='pname'></span><span class='ph'></span>";
+        strip.querySelector(".pname").textContent = tiles[t].name;
+        strip.querySelector(".ph").textContent = houseEmoji(housesOn(t));
+        if (canBuildNow(t)) {
+            const level = housesOn(t) + 1;
+            const btn = document.createElement("button");
+            btn.className = "pbuild";
+            btn.textContent = "＋" + (level >= HOTEL_LEVEL ? "🏨" : "🏠") + " " + HOUSE_COST[tiles[t].group];
+            btn.title = level >= HOTEL_LEVEL ? "Построить отель" : "Построить дом";
+            btn.onclick = e => { e.stopPropagation(); buildHouse(t); };
+            strip.appendChild(btn);
+        }
+        strip.onmouseenter = () => showPreview(t, strip);
+        strip.onclick = () => showPreview(t, strip);
+        strip.onmouseleave = schedulePreviewHide;
+        pile.appendChild(strip);
+    });
+}
+
+function showPreview(idx, strip) {
+    clearTimeout(previewTimer);
+    const pv = $("card-preview");
+    pv.innerHTML = tileInfoHTML(idx);
+    pv.classList.remove("hidden");
+    const r = strip.getBoundingClientRect();
+    const panel = $("props-col").getBoundingClientRect();
+    const h = pv.offsetHeight;
+    if (panel.right + 310 <= window.innerWidth) {
+        // справа от стопки, если есть место
+        pv.style.left = (panel.right + 10) + "px";
+        pv.style.top = Math.max(8, Math.min(window.innerHeight - h - 8, r.top + r.height / 2 - h / 2)) + "px";
+    } else {
+        // иначе над стопкой, чтобы не закрывать кнопки хода
+        pv.style.left = Math.max(8, Math.min(window.innerWidth - 308, panel.right - 300)) + "px";
+        pv.style.top = Math.max(8, panel.top - h - 8) + "px";
+    }
+}
+
+function schedulePreviewHide() {
+    clearTimeout(previewTimer);
+    previewTimer = setTimeout(() => $("card-preview").classList.add("hidden"), 150);
 }
 
 // Всплывающая сумма над счётом игрока.
@@ -269,6 +457,33 @@ function addMoney(player, delta) {
     player.money += delta;
     renderAll();
     floatMoney(player, delta);
+}
+
+// ---------- дома и отели ----------
+// Можно строить, если вся цветовая группа твоя, строишь равномерно, не больше 4 домов, отель только вместо 4 домов.
+function canBuildNow(idx) {
+    if (!gameState || !gameState.idle || gameState.over) return false;
+    const p = cur();
+    if (p.bankrupt || tileKind(idx) !== "street" || gameState.owners[idx] !== idxOf(p)) return false;
+    const group = tiles[idx].group;
+    const members = groupMembers(group);
+    if (!members.every(i => gameState.owners[i] === idxOf(p))) return false;
+    const level = housesOn(idx);
+    if (level >= HOTEL_LEVEL) return false;
+    if (level > Math.min(...members.map(housesOn))) return false; // равномерная застройка
+    return p.money >= HOUSE_COST[group];
+}
+
+function buildHouse(idx) {
+    if (!canBuildNow(idx)) return;
+    const p = cur();
+    const cost = HOUSE_COST[tiles[idx].group];
+    const level = housesOn(idx) + 1;
+    gameState.houses[idx] = level;
+    addMoney(p, -cost);
+    say(p.name + " строит " + (level >= HOTEL_LEVEL ? "отель" : "дом (" + level + " из " + MAX_HOUSES + ")") + " на «" + tiles[idx].name + "» за " + money(cost));
+    setInfoTile(idx);
+    renderAll();
 }
 
 // ---------- деньги и банкротство ----------
@@ -295,6 +510,7 @@ async function declareBankrupt(player, creditor) {
     player.money = 0;
     Object.keys(gameState.owners).forEach(t => {
         if (gameState.owners[t] === i) {
+            delete gameState.houses[t]; // постройки сносятся
             if (creditor !== undefined) gameState.owners[t] = creditor;
             else delete gameState.owners[t];
         }
@@ -339,6 +555,7 @@ async function sendToJail(p) {
     p.inJail = true;
     p.jailTurns = 0;
     gameState.doubles = 0;
+    setInfoTile(JAIL_TILE);
     renderAll();
 }
 
@@ -358,14 +575,15 @@ function calcRent(idx, opts) {
         const n = ownedCount(owner, UTILITY_TILES);
         return (n === 2 ? 10 : 4) * lastDiceSum;
     }
-    const group = tiles[idx].group;
-    const members = tiles.map((t, i) => i).filter(i => tiles[i].group === group);
-    const full = members.every(i => gameState.owners[i] === owner);
-    return BASE_RENT[idx] * (full ? 2 : 1);
+    const built = housesOn(idx);
+    if (built > 0) return RENTS[idx][built];
+    const full = groupMembers(tiles[idx].group).every(i => gameState.owners[i] === owner);
+    return RENTS[idx][0] * (full ? 2 : 1);
 }
 
 async function landOn(p, idx, opts) {
     const tile = tiles[idx];
+    setInfoTile(idx);
     if (tile.group === "corner") {
         if (idx === GO_TO_JAIL_TILE) await sendToJail(p);
         return;
@@ -440,7 +658,8 @@ async function applyCard(p, card) {
             await landOn(p, p.pos);
             break;
         case "nearestDepot": {
-            const target = DEPOT_TILES.find(d => d > p.pos) !== undefined ? DEPOT_TILES.find(d => d > p.pos) : DEPOT_TILES[0];
+            const ahead = DEPOT_TILES.find(d => d > p.pos);
+            const target = ahead !== undefined ? ahead : DEPOT_TILES[0];
             await movePlayer(p, (target - p.pos + 40) % 40);
             await landOn(p, p.pos, { rentMult: 2 });
             break;
@@ -474,6 +693,8 @@ async function startTurn() {
     if (gameState.over) return;
     const p = cur();
     gameState.doubles = 0;
+    propsView = null;
+    setInfoTile(-1);
     $("roll-note").textContent = "";
     renderAll();
 
@@ -499,6 +720,7 @@ async function startTurn() {
 
 async function playRoll() {
     const p = cur();
+    setInfoTile(-1);
     const a = rollDie(), b = rollDie();
     await animateDice(a, b);
     const sum = a + b;
@@ -551,7 +773,7 @@ async function afterAction(doubles) {
         await playRoll();
         return;
     }
-    await ask(p.name + ": ход закончен", [{ label: "Завершить ход", value: true, primary: true }]);
+    await ask(p.name + ": ход закончен (можно построить дома)", [{ label: "Завершить ход", value: true, primary: true }]);
     endTurn();
 }
 
@@ -571,8 +793,10 @@ function newGame(names) {
             inJail: false, jailTurns: 0, jailCards: [], bankrupt: false, hop: null
         })),
         owners: {},
+        houses: {},
         current: 0,
         doubles: 0,
+        idle: false,
         over: false,
         decks: {
             chance: { queue: shuffle(CHANCE_CARDS) },
@@ -580,7 +804,7 @@ function newGame(names) {
         }
     };
     logLines = [];
-    $("log").innerHTML = "";
+    $("log-full").innerHTML = "";
     buildDice();
     say("Игра началась! У каждого по " + money(START_MONEY));
     startTurn();
@@ -633,5 +857,8 @@ function initDisclaimer() {
     }
 }
 
+$("card-preview").addEventListener("mouseenter", () => clearTimeout(previewTimer));
+$("card-preview").addEventListener("mouseleave", schedulePreviewHide);
 buildDice();
+initHover();
 initDisclaimer();
