@@ -11,19 +11,23 @@ const UTILITY_TILES = [12, 28];
 const PLAYER_COLORS = ["#3ee0ff", "#b4f23d", "#ffffff", "#ffd23f"];
 const MAX_HOUSES = 4;   // больше 4 домов нельзя; отель (уровень 5) строится только на месте 4 домов
 const HOTEL_LEVEL = 5;
+// Номера клеток идут против часовой стрелки (СТАРТ слева внизу), а фишки ходят по часовой: номер клетки при каждом шаге уменьшается.
+const TRAVEL = -1;
+// Сколько шагов от клетки from до клетки to по ходу игры.
+const stepsTo = (from, to) => ((to - from) * TRAVEL % 40 + 40) % 40;
 
 // Рента улиц: [без домов, 1 дом, 2, 3, 4 дома, отель]. Без домов, но при полной цветовой группе, рента вдвое больше.
 const RENTS = {
     1: [2, 10, 30, 90, 160, 250],        3: [4, 20, 60, 180, 320, 450],
-    6: [6, 30, 90, 270, 400, 550],       8: [6, 30, 90, 270, 400, 550],      9: [8, 40, 100, 300, 450, 600],
+    6: [60, 240, 700, 1600, 1900, 2200],  8: [60, 240, 700, 1600, 1900, 2200], 9: [70, 280, 800, 1800, 2100, 2500],
     11: [10, 50, 150, 450, 625, 750],    13: [10, 50, 150, 450, 625, 750],   14: [12, 60, 180, 500, 700, 900],
     16: [14, 70, 200, 550, 750, 950],    18: [14, 70, 200, 550, 750, 950],   19: [16, 80, 220, 600, 800, 1000],
     21: [18, 90, 250, 700, 875, 1050],   23: [18, 90, 250, 700, 875, 1050],  24: [20, 100, 300, 750, 925, 1100],
     26: [22, 110, 330, 800, 975, 1150],  27: [22, 110, 330, 800, 975, 1150], 29: [24, 120, 360, 850, 1025, 1200],
     31: [26, 130, 390, 900, 1100, 1275], 32: [26, 130, 390, 900, 1100, 1275], 34: [28, 150, 450, 1000, 1200, 1400],
-    37: [35, 175, 500, 1100, 1300, 1500], 39: [50, 200, 600, 1400, 1700, 2000]
+    37: [20, 100, 300, 750, 925, 1100],   39: [22, 110, 330, 800, 975, 1150]
 };
-const HOUSE_COST = { brown: 50, trio: 50, pink: 100, orange: 100, red: 150, yellow: 150, green: 200, blue: 200 };
+const HOUSE_COST = { brown: 50, trio: 250, pink: 100, orange: 100, red: 150, yellow: 150, green: 200, blue: 150 };
 const GROUP_ORDER = ["brown", "trio", "pink", "orange", "red", "yellow", "green", "blue"];
 
 const NOTE_VALUES = [500, 100, 50, 10, 5, 1];
@@ -529,14 +533,15 @@ async function declareBankrupt(player, creditor) {
 }
 
 // ---------- движение ----------
+// dir: TRAVEL (по умолчанию) - вперёд по ходу игры, -TRAVEL - назад.
 async function movePlayer(p, steps, dir) {
-    dir = dir || 1;
+    dir = dir || TRAVEL;
     highlightTile = (p.pos + dir * steps + 400) % 40;
     requestDraw();
     for (let s = 0; s < steps; s++) {
         const next = (p.pos + dir + 40) % 40;
         await hopToken(p, next);
-        if (dir > 0 && next === 0) {
+        if (dir === TRAVEL && next === 0) {
             say(p.name + " проходит СТАРТ: +" + money(GO_SALARY));
             addMoney(p, GO_SALARY);
         }
@@ -648,19 +653,19 @@ async function applyCard(p, card) {
             await sendToJail(p);
             break;
         case "moveTo": {
-            const steps = (card.v - p.pos + 40) % 40;
+            const steps = stepsTo(p.pos, card.v);
             if (steps > 0) await movePlayer(p, steps);
             await landOn(p, p.pos);
             break;
         }
         case "back":
-            await movePlayer(p, card.v, -1);
+            await movePlayer(p, card.v, -TRAVEL);
             await landOn(p, p.pos);
             break;
         case "nearestDepot": {
-            const ahead = DEPOT_TILES.find(d => d > p.pos);
-            const target = ahead !== undefined ? ahead : DEPOT_TILES[0];
-            await movePlayer(p, (target - p.pos + 40) % 40);
+            // ближайшее депо впереди по ходу игры
+            const target = DEPOT_TILES.slice().sort((a, b) => stepsTo(p.pos, a) - stepsTo(p.pos, b)).find(d => stepsTo(p.pos, d) > 0);
+            await movePlayer(p, stepsTo(p.pos, target));
             await landOn(p, p.pos, { rentMult: 2 });
             break;
         }

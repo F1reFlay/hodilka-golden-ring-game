@@ -39,10 +39,10 @@ const tiles = [
     { name: "Заречная", group: "brown", price: 60 },
     { name: "Подоходный налог", label: "Подоход-\nный налог", group: "special", emoji: "💰", tax: 200 },
     { name: "Депо Северное", label: "Депо\nСеверное", group: "special", emoji: "🚇", price: 200 },
-    { name: "Черняховского", label: "Черняхов-\nского", group: "trio", price: 100 },
+    { name: "Черняховского", label: "Черняхов-\nского", group: "trio", price: 420 },
     { name: "Шанс", group: "special", emoji: "❓", hint: "Возьми\nкарту" },
-    { name: "Усьевича", group: "trio", price: 100 },
-    { name: "Планетная", group: "trio", price: 120 },
+    { name: "Усьевича", group: "trio", price: 420 },
+    { name: "Планетная", group: "trio", price: 460 },
     { name: "ШТРАФСТОЯНКА", label: "ШТРАФ-\nСТОЯНКА", group: "corner", emoji: "🚔" },
     { name: "Абрикосовая", label: "Абрико-\nсовая", group: "pink", price: 140 },
     { name: "Электростанция", label: "Электро-\nстанция", group: "special", emoji: "⚡", price: 150 },
@@ -70,9 +70,9 @@ const tiles = [
     { name: "Балчуг", group: "green", price: 320 },
     { name: "Депо Западное", label: "Депо\nЗападное", group: "special", emoji: "🚇", price: 200 },
     { name: "Шанс", group: "special", emoji: "❓", hint: "Возьми\nкарту" },
-    { name: "Тверская", group: "blue", price: 350 },
+    { name: "Тверская", group: "blue", price: 240 },
     { name: "Налог на роскошь", label: "Налог на\nроскошь", group: "special", emoji: "💎", tax: 100 },
-    { name: "Кутузовский", label: "Кутузов-\nский", group: "blue", price: 400 }
+    { name: "Кутузовский", label: "Кутузов-\nский", group: "blue", price: 260 }
 ];
 
 // ---- состояние игры (его создаёт logic.js; до старта игры доска рисуется пустой) ----
@@ -85,15 +85,15 @@ let rafId = 0;
 
 function getTileRectRaw(index) {
     const i = ((index % 40) + 40) % 40;
-    // ход идёт по часовой стрелке: СТАРТ справа внизу, дальше влево по нижней стороне, вверх по левой, вправо по верхней, вниз по правой
-    if (i === 0)  return { x: BOARD - D, y: BOARD - D, w: D, h: D, corner: true };
-    if (i === 10) return { x: 0, y: BOARD - D, w: D, h: D, corner: true };
-    if (i === 20) return { x: 0, y: 0, w: D, h: D, corner: true };
-    if (i === 30) return { x: BOARD - D, y: 0, w: D, h: D, corner: true };
-    if (i < 10)  return { x: BOARD - D - i * W, y: BOARD - D, w: W, h: D, side: "bottom" };
-    if (i < 20)  return { x: 0, y: BOARD - D - (i - 10) * W, w: D, h: W, side: "left" };
-    if (i < 30)  return { x: D + (i - 21) * W, y: 0, w: W, h: D, side: "top" };
-    return { x: BOARD - D, y: D + (i - 31) * W, w: D, h: W, side: "right" };
+    // нумерация клеток идёт против часовой стрелки (СТАРТ слева внизу), а фишки ходят в обратную сторону, см. TRAVEL в logic.js
+    if (i === 0)  return { x: 0, y: BOARD - D, w: D, h: D, corner: true };
+    if (i === 10) return { x: BOARD - D, y: BOARD - D, w: D, h: D, corner: true };
+    if (i === 20) return { x: BOARD - D, y: 0, w: D, h: D, corner: true };
+    if (i === 30) return { x: 0, y: 0, w: D, h: D, corner: true };
+    if (i < 10)  return { x: D + (i - 1) * W, y: BOARD - D, w: W, h: D, side: "bottom" };
+    if (i < 20)  return { x: BOARD - D, y: BOARD - D - (i - 10) * W, w: D, h: W, side: "right" };
+    if (i < 30)  return { x: BOARD - D - (i - 20) * W, y: 0, w: W, h: D, side: "top" };
+    return { x: 0, y: D + (i - 31) * W, w: D, h: W, side: "left" };
 }
 
 function getTileRect(index) {
@@ -382,7 +382,7 @@ function hopToken(player, to, ms) {
         player.hop = { from: player.pos, to: to, t: 0 };
         function step(now) {
             const t = Math.min((now - start) / duration, 1);
-            player.hop.t = t;
+            if (player.hop) player.hop.t = t;
             requestDraw();
             if (t < 1) {
                 requestAnimationFrame(step);
