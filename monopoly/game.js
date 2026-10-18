@@ -1,8 +1,10 @@
 const canvas = document.getElementById("board-canvas");
 const ctx = canvas.getContext("2d");
 
-const BOARD = 760;
-const D = 105;
+// Все размеры ниже в «единицах доски» (BOARD x BOARD). Canvas хранит их в RES раз крупнее, чтобы текст был чётким.
+const BOARD = 800;
+const RES = canvas.width / BOARD;
+const D = 112;
 const W = (BOARD - 2 * D) / 9;
 const GAP = 4;
 
@@ -25,48 +27,52 @@ const cornerText  = "#ffffff";
 const specialBg   = "#2C2C2A";
 const specialText = "#F1EFE8";
 const innerBg     = "#0d0e10";
+const priceText   = "#8be9fd";
+const taxText     = "#ff8a72";
 
+// label: название с переносами "\n" (если нужно разбить длинное слово), иначе рисуется name.
+// price: цена покупки, tax: сумма налога.
 const tiles = [
     { name: "СТАРТ", group: "corner", emoji: "🚀" },
     { name: "Полевая", group: "brown", price: 60 },
-    { name: "Казна", group: "special", emoji: "🏦" },
+    { name: "Казна", group: "special", emoji: "🏦", hint: "Возьми\nкарту" },
     { name: "Заречная", group: "brown", price: 60 },
-    { name: "Подоходный налог", group: "special", emoji: "💸" },
-    { name: "Депо Северное", group: "special", emoji: "🚇", price: 200 },
-    { name: "Черняховского", group: "trio", price: 100 },
-    { name: "Шанс", group: "special", emoji: "❓" },
+    { name: "Подоходный налог", label: "Подоход-\nный налог", group: "special", emoji: "💰", tax: 200 },
+    { name: "Депо Северное", label: "Депо\nСеверное", group: "special", emoji: "🚇", price: 200 },
+    { name: "Черняховского", label: "Черняхов-\nского", group: "trio", price: 100 },
+    { name: "Шанс", group: "special", emoji: "❓", hint: "Возьми\nкарту" },
     { name: "Усьевича", group: "trio", price: 100 },
     { name: "Планетная", group: "trio", price: 120 },
-    { name: "ШТРАФСТОЯНКА", group: "corner", emoji: "🚔" },
-    { name: "Абрикосовая", group: "pink", price: 140 },
-    { name: "Электростанция", group: "special", emoji: "⚡", price: 150 },
+    { name: "ШТРАФСТОЯНКА", label: "ШТРАФ-\nСТОЯНКА", group: "corner", emoji: "🚔" },
+    { name: "Абрикосовая", label: "Абрико-\nсовая", group: "pink", price: 140 },
+    { name: "Электростанция", label: "Электро-\nстанция", group: "special", emoji: "⚡", price: 150 },
     { name: "Вишнёвая", group: "pink", price: 140 },
     { name: "Садовая", group: "pink", price: 160 },
-    { name: "Депо Восточное", group: "special", emoji: "🚇", price: 200 },
+    { name: "Депо Восточное", label: "Депо\nВосточное", group: "special", emoji: "🚇", price: 200 },
     { name: "Кузнечная", group: "orange", price: 180 },
-    { name: "Казна", group: "special", emoji: "🏦" },
+    { name: "Казна", group: "special", emoji: "🏦", hint: "Возьми\nкарту" },
     { name: "Гончарная", group: "orange", price: 180 },
     { name: "Литейная", group: "orange", price: 200 },
     { name: "ПРИВАЛ", group: "corner", emoji: "☕" },
-    { name: "Тверская-Ямская", group: "red", price: 220 },
-    { name: "Шанс", group: "special", emoji: "❓" },
-    { name: "Пресненский Вал", group: "red", price: 220 },
-    { name: "Электрозаводская", group: "red", price: 240 },
-    { name: "Депо Южное", group: "special", emoji: "🚇", price: 200 },
+    { name: "Тверская-Ямская", label: "Тверская-\nЯмская", group: "red", price: 220 },
+    { name: "Шанс", group: "special", emoji: "❓", hint: "Возьми\nкарту" },
+    { name: "Пресненский Вал", label: "Преснен-\nский Вал", group: "red", price: 220 },
+    { name: "Электрозаводская", label: "Электро-\nзаводская", group: "red", price: 240 },
+    { name: "Депо Южное", label: "Депо\nЮжное", group: "special", emoji: "🚇", price: 200 },
     { name: "Мясницкая", group: "yellow", price: 260 },
     { name: "Покровка", group: "yellow", price: 260 },
     { name: "Водоканал", group: "special", emoji: "🚰", price: 150 },
     { name: "Маросейка", group: "yellow", price: 280 },
-    { name: "НА ШТРАФСТОЯНКУ", group: "corner", emoji: "👮" },
+    { name: "НА ШТРАФСТОЯНКУ", label: "НА ШТРАФ-\nСТОЯНКУ", group: "corner", emoji: "👮" },
     { name: "Пятницкая", group: "green", price: 300 },
     { name: "Ордынка", group: "green", price: 300 },
-    { name: "Казна", group: "special", emoji: "🏦" },
+    { name: "Казна", group: "special", emoji: "🏦", hint: "Возьми\nкарту" },
     { name: "Балчуг", group: "green", price: 320 },
-    { name: "Депо Западное", group: "special", emoji: "🚇", price: 200 },
-    { name: "Шанс", group: "special", emoji: "❓" },
+    { name: "Депо Западное", label: "Депо\nЗападное", group: "special", emoji: "🚇", price: 200 },
+    { name: "Шанс", group: "special", emoji: "❓", hint: "Возьми\nкарту" },
     { name: "Тверская", group: "blue", price: 350 },
-    { name: "Налог на роскошь", group: "special", emoji: "💎" },
-    { name: "Кутузовский", group: "blue", price: 400 }
+    { name: "Налог на роскошь", label: "Налог на\nроскошь", group: "special", emoji: "💎", tax: 100 },
+    { name: "Кутузовский", label: "Кутузов-\nский", group: "blue", price: 400 }
 ];
 
 function getTileRectRaw(index) {
@@ -96,11 +102,12 @@ function roundRect(x, y, w, h, r) {
     ctx.closePath();
 }
 
-function wrapText(text, x, y, maxWidth, lineHeight) {
-    const words = text.split(" ");
+// Делит текст на строки: по "\n" из label, иначе по пробелам с учётом ширины.
+function splitLines(text, maxWidth) {
+    if (text.indexOf("\n") !== -1) return text.split("\n");
     const lines = [];
     let current = "";
-    words.forEach(word => {
+    text.split(" ").forEach(word => {
         const test = current ? current + " " + word : word;
         if (ctx.measureText(test).width > maxWidth && current) {
             lines.push(current);
@@ -110,8 +117,24 @@ function wrapText(text, x, y, maxWidth, lineHeight) {
         }
     });
     if (current) lines.push(current);
+    return lines;
+}
+
+// Подбирает размер шрифта так, чтобы самая длинная строка влезла в maxWidth, и рисует строки по центру.
+function drawFittedText(text, x, y, maxWidth, maxSize, minSize, lineGap, weight, family) {
+    let size = maxSize;
+    let lines;
+    for (;;) {
+        ctx.font = weight + " " + size + "px " + family;
+        lines = splitLines(text, maxWidth);
+        const widest = Math.max(...lines.map(l => ctx.measureText(l).width));
+        if (widest <= maxWidth || size <= minSize) break;
+        size -= 0.5;
+    }
+    const lineHeight = size + lineGap;
     const startY = y - ((lines.length - 1) * lineHeight) / 2;
     lines.forEach((line, idx) => ctx.fillText(line, x, startY + idx * lineHeight));
+    return lines.length;
 }
 
 function getSideRotation(side) {
@@ -121,7 +144,6 @@ function getSideRotation(side) {
     return 0;
 }
 
-const SCALE = canvas.width / BOARD;
 let currentAngle = 0;
 let targetAngle = 0;
 
@@ -144,66 +166,92 @@ function rotateBoard() {
     requestAnimationFrame(frame);
 }
 
+// Рисует содержимое клетки в её собственных координатах: центр (0,0), «вниз» (+y) = к внешнему краю доски.
+// lw - длина клетки вдоль стороны, lh - глубина клетки (от центра доски наружу).
+function drawTileContent(tile, lw, lh) {
+    const isCorner = tile.group === "corner";
+    const textW = lw - 10;
+
+    if (isCorner) {
+        ctx.fillStyle = cornerText;
+        ctx.font = "30px sans-serif";
+        ctx.fillText(tile.emoji, 0, -22);
+        drawFittedText(tile.label || tile.name, 0, 24, lw - 16, 11, 8, 3, "700", "'Unbounded', sans-serif");
+        return;
+    }
+
+    // цветная плашка со свечением у внешнего края
+    if (groupColors[tile.group]) {
+        const thin = 12;
+        ctx.save();
+        ctx.shadowColor = groupColors[tile.group];
+        ctx.shadowBlur = 10;
+        roundRect(-lw / 2 + 6, lh / 2 - thin - 6, lw - 12, thin, 4);
+        ctx.fillStyle = groupColors[tile.group];
+        ctx.fill();
+        ctx.restore();
+    }
+
+    const hasPrice = tile.price !== undefined || tile.tax !== undefined;
+    ctx.fillStyle = tile.group === "special" ? specialText : tileText;
+    if (tile.emoji) {
+        ctx.font = "22px sans-serif";
+        ctx.fillText(tile.emoji, 0, -lh / 2 + 24);
+    }
+    // с иконкой название ниже, без иконки - выше
+    const nameY = tile.emoji ? -4 : -14;
+    drawFittedText(tile.label || tile.name, 0, nameY, textW, 12.5, 8.5, 2, "600", "sans-serif");
+
+    if (tile.hint) {
+        ctx.fillStyle = "#9aa3b2";
+        drawFittedText(tile.hint, 0, lh / 2 - 26, textW, 11, 8.5, 2, "600", "sans-serif");
+    }
+
+    if (hasPrice) {
+        ctx.fillStyle = tile.tax !== undefined ? taxText : priceText;
+        const text = (tile.tax !== undefined ? tile.tax : tile.price) + " ₽";
+        drawFittedText(text, 0, lh / 2 - (groupColors[tile.group] ? 32 : 22), textW, 13, 9, 0, "700", "sans-serif");
+    }
+}
+
 function drawBoard() {
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-    const cx = canvas.width / 2, cy = canvas.height / 2;
+    ctx.scale(RES, RES);
+    const cx = BOARD / 2, cy = BOARD / 2;
 
     ctx.save();
     ctx.translate(cx, cy);
     ctx.rotate(currentAngle);
     ctx.translate(-cx, -cy);
-    ctx.scale(SCALE, SCALE);
 
     roundRect(D * 0.15, D * 0.15, BOARD - D * 0.3, BOARD - D * 0.3, 18);
     ctx.fillStyle = innerBg;
     ctx.fill();
 
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+
     for (let i = 0; i < 40; i++) {
         const tile = tiles[i];
+        const isCorner = tile.group === "corner";
         const r = getTileRect(i);
-        const isColorGroup = !!groupColors[tile.group];
 
         roundRect(r.x, r.y, r.w, r.h, 10);
-        ctx.fillStyle = tile.corner ? cornerBg : (tile.group === "special" ? specialBg : tileBg);
+        ctx.fillStyle = isCorner ? cornerBg : (tile.group === "special" ? specialBg : tileBg);
         ctx.fill();
         ctx.strokeStyle = tileBorder;
         ctx.lineWidth = 1.2;
         ctx.stroke();
 
-        // тонкая, но ДЛИННАЯ цветная плашка со свечением у внешнего края
-        if (isColorGroup) {
-            const thin = (r.side === "bottom" || r.side === "top") ? r.h * 0.16 : r.w * 0.16;
-            const edgePad = thin * 0.5;
-            const lengthPad = 5; // маленький отступ по длине - плашка почти во всю ширину клетки
-            let sx, sy, sw, sh;
-            if (r.side === "bottom") { sw = r.w - lengthPad * 2; sh = thin; sx = r.x + lengthPad; sy = r.y + r.h - sh - edgePad; }
-            else if (r.side === "top") { sw = r.w - lengthPad * 2; sh = thin; sx = r.x + lengthPad; sy = r.y + edgePad; }
-            else if (r.side === "left") { sh = r.h - lengthPad * 2; sw = thin; sx = r.x + edgePad; sy = r.y + lengthPad; }
-            else { sh = r.h - lengthPad * 2; sw = thin; sx = r.x + r.w - sw - edgePad; sy = r.y + lengthPad; }
-
-            ctx.save();
-            ctx.shadowColor = groupColors[tile.group];
-            ctx.shadowBlur = 10;
-            roundRect(sx, sy, sw, sh, 4);
-            ctx.fillStyle = groupColors[tile.group];
-            ctx.fill();
-            ctx.restore();
-        }
-
-        // текст развёрнут по своей стороне; эмодзи и подпись разведены дальше друг от друга - не наезжают
-        const along = (r.side === "left" || r.side === "right") ? r.h : r.w;
+        // текст развёрнут по своей стороне (задумано: так читается с «места» игрока, для удобства есть кнопка «Повернуть»)
+        const sideways = r.side === "left" || r.side === "right";
+        const lw = sideways ? r.h : r.w;
+        const lh = sideways ? r.w : r.h;
         ctx.save();
         ctx.translate(r.x + r.w / 2, r.y + r.h / 2);
-        ctx.rotate(tile.corner ? 0 : getSideRotation(r.side));
-        ctx.textAlign = "center";
-        ctx.textBaseline = "middle";
-        ctx.fillStyle = tile.corner ? cornerText : (tile.group === "special" ? specialText : tileText);
-        ctx.font = tile.corner ? "700 12px 'Unbounded', sans-serif" : "600 11px sans-serif";
-        wrapText(tile.name, 0, tile.corner ? 14 : 4, along - 12, 12);
-        if (tile.emoji) {
-            ctx.font = (tile.corner ? 22 : 13) + "px sans-serif";
-            ctx.fillText(tile.emoji, 0, tile.corner ? -24 : -22);
-        }
+        ctx.rotate(isCorner ? -currentAngle : getSideRotation(r.side));
+        drawTileContent(tile, lw, lh);
         ctx.restore();
     }
 
