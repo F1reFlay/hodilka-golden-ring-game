@@ -11,6 +11,8 @@ const UTILITY_TILES = [12, 28];
 const PLAYER_COLORS = ["#3ee0ff", "#b4f23d", "#ffffff", "#ffd23f"];
 const MAX_HOUSES = 4;   // больше 4 домов нельзя; отель (уровень 5) строится только на месте 4 домов
 const HOTEL_LEVEL = 5;
+const HOUSE_SUPPLY = 32; // в банке всего 32 дома и 12 отелей, как в настоящей игре
+const HOTEL_SUPPLY = 12;
 // Номера клеток идут против часовой стрелки (СТАРТ слева внизу), а фишки ходят по часовой: номер клетки при каждом шаге уменьшается.
 const TRAVEL = -1;
 // Сколько шагов от клетки from до клетки to по ходу игры.
@@ -80,6 +82,7 @@ let logLines = [];
 let setupCount = 2;
 let infoTile = -1;     // клетка, на которой стоит фишка (экранчик с информацией)
 let hoverTile = -1;    // клетка под мышкой
+let pinnedTile = -1;   // клетка, на которую нажали (для телефона)
 let propsView = null;  // чьи владения показаны (null = ходящего)
 let previewTimer = 0;
 
@@ -334,7 +337,7 @@ function tileInfoHTML(idx) {
 
 // Экранчик в центре доски: если клетка в верхней половине, он над надписью «МОНОПОЛИЯ», иначе под ней; пунктир тянется к клетке.
 function refreshInfo() {
-    const idx = hoverTile >= 0 ? hoverTile : infoTile;
+    const idx = hoverTile >= 0 ? hoverTile : (pinnedTile >= 0 ? pinnedTile : infoTile);
     const box = $("tile-info");
     if (idx < 0) {
         box.classList.add("hidden");
@@ -376,23 +379,58 @@ function positionInfo(idx) {
 }
 
 function onBoardRotate() {
-    const idx = hoverTile >= 0 ? hoverTile : infoTile;
+    const idx = hoverTile >= 0 ? hoverTile : (pinnedTile >= 0 ? pinnedTile : infoTile);
     if (idx >= 0 && !$("tile-info").classList.contains("hidden")) positionInfo(idx);
 }
 
 function setInfoTile(idx) {
     infoTile = idx;
+    pinnedTile = -1;
     refreshInfo();
 }
 
+// Узкий экран (телефон): меню под доской, а не справа от неё.
+function isNarrowLayout() {
+    return $("props-col").getBoundingClientRect().left < 320;
+}
+
+function showTileSheet(idx) {
+    clearTimeout(previewTimer);
+    const pv = $("card-preview");
+    pv.innerHTML = tileInfoHTML(idx);
+    pv.classList.add("sheet");
+    pv.classList.remove("hidden");
+    const close = document.createElement("div");
+    close.className = "tc-close";
+    close.textContent = "Нажми вне карточки, чтобы закрыть";
+    pv.firstChild.appendChild(close);
+}
+
+function tileUnderPointer(e) {
+    const r = canvas.getBoundingClientRect();
+    return tileAtScreenPoint((e.clientX - r.left) / r.width * BOARD, (e.clientY - r.top) / r.height * BOARD);
+}
+
+// Мышь: информация о клетке по наведению. Телефон и мышь: нажатие закрепляет информацию, повторное нажатие убирает.
 function initHover() {
-    canvas.addEventListener("mousemove", e => {
-        const r = canvas.getBoundingClientRect();
-        const t = tileAtScreenPoint((e.clientX - r.left) / r.width * BOARD, (e.clientY - r.top) / r.height * BOARD);
+    canvas.addEventListener("pointermove", e => {
+        if (e.pointerType !== "mouse") return;
+        const t = tileUnderPointer(e);
         if (t !== hoverTile) { hoverTile = t; refreshInfo(); }
     });
-    canvas.addEventListener("mouseleave", () => {
-        if (hoverTile !== -1) { hoverTile = -1; refreshInfo(); }
+    canvas.addEventListener("pointerleave", e => {
+        if (e.pointerType === "mouse" && hoverTile !== -1) { hoverTile = -1; refreshInfo(); }
+    });
+    canvas.addEventListener("click", e => {
+        const t = tileUnderPointer(e);
+        if (isNarrowLayout()) {
+            // телефон: подробности клетки выезжают снизу, на доске мало места
+            if (t >= 0) showTileSheet(t); else $("card-preview").classList.add("hidden");
+            e.stopPropagation();
+            return;
+        }
+        pinnedTile = (t === pinnedTile || t < 0) ? -1 : t;
+        refreshInfo();
     });
 }
 
@@ -451,6 +489,7 @@ function pileOrder(i) {
 
 function renderProps() {
     if (!gameState) return;
+    $("bank-supply").textContent = "банк: 🏠 " + housesLeft() + " · 🏨 " + hotelsLeft();
     const viewIdx = propsView === null ? (gameState.actor ? idxOf(gameState.actor) : gameState.current) : propsView;
     const viewer = gameState.players[viewIdx];
 
@@ -503,6 +542,7 @@ function showPreview(idx, strip) {
     // кнопки действий (строить, продать, заложить, выкупить) для имущества того, кто сейчас распоряжается
     const actions = [];
     if (canBuildNow(idx)) actions.push([housesOn(idx) + 1 >= HOTEL_LEVEL ? "＋ Отель " + HOUSE_COST[tiles[idx].group] + " ₽" : "＋ Дом " + HOUSE_COST[tiles[idx].group] + " ₽", () => buildHouse(idx), true]);
+    else if (canBuildRules(idx) && !buildSupplyLeft(idx)) actions.push([housesOn(idx) + 1 >= HOTEL_LEVEL ? "Отели в банке закончились" : "Дома в банке закончились", () => {}, false, true]);
     if (canSellHouse(idx)) actions.push(["− Продать " + (housesOn(idx) >= HOTEL_LEVEL ? "отель" : "дом") + " +" + HOUSE_COST[tiles[idx].group] / 2 + " ₽", () => sellHouse(idx)]);
     if (canMortgage(idx)) actions.push(["Заложить +" + mortgageValue(idx) + " ₽", () => mortgageTile(idx)]);
     if (canUnmortgage(idx)) actions.push(["Выкупить −" + unmortgageCost(idx) + " ₽", () => unmortgageTile(idx), true]);
@@ -513,6 +553,7 @@ function showPreview(idx, strip) {
             const b = document.createElement("button");
             b.className = "btn btn-small" + (a[2] ? " primary" : "");
             b.textContent = a[0];
+            b.disabled = !!a[3];
             b.onclick = () => {
                 a[1]();
                 const s = [...document.querySelectorAll(".pstrip")].find(x => Number(x.dataset.tile) === idx);
@@ -524,15 +565,19 @@ function showPreview(idx, strip) {
     }
     const r = strip.getBoundingClientRect();
     const panel = $("props-col").getBoundingClientRect();
-    const h = pv.offsetHeight;
-    if (panel.right + 310 <= window.innerWidth) {
-        // справа от стопки, если есть место
-        pv.style.left = (panel.right + 10) + "px";
+    if (panel.left >= 320) {
+        // компьютер: карточка выезжает влево от стопки, поверх доски
+        pv.classList.remove("sheet");
+        const h = pv.offsetHeight;
+        pv.style.left = (panel.left - 310) + "px";
         pv.style.top = Math.max(8, Math.min(window.innerHeight - h - 8, r.top + r.height / 2 - h / 2)) + "px";
     } else {
-        // иначе над стопкой, чтобы не закрывать кнопки хода
-        pv.style.left = Math.max(8, Math.min(window.innerWidth - 308, panel.right - 300)) + "px";
-        pv.style.top = Math.max(8, panel.top - h - 8) + "px";
+        // телефон: карточка выезжает снизу экрана, закрывается касанием вне неё
+        pv.classList.add("sheet");
+        const close = document.createElement("div");
+        close.className = "tc-close";
+        close.textContent = "Нажми вне карточки, чтобы закрыть";
+        pv.firstChild.appendChild(close);
     }
 }
 
@@ -569,8 +614,11 @@ const manageable = () => !!gameState && gameState.idle && !gameState.over;
 const ownsGroup = (p, group) => groupMembers(group).every(i => gameState.owners[i] === idxOf(p));
 const groupHasMortgage = group => groupMembers(group).some(isMortgaged);
 
+const housesLeft = () => HOUSE_SUPPLY - Object.values(gameState.houses).reduce((n, l) => n + (l >= HOTEL_LEVEL ? 0 : l), 0);
+const hotelsLeft = () => HOTEL_SUPPLY - Object.values(gameState.houses).filter(l => l >= HOTEL_LEVEL).length;
+
 // Можно строить, если вся цветовая группа твоя и не в залоге, строишь равномерно, не больше 4 домов, отель только вместо 4 домов.
-function canBuildNow(idx) {
+function canBuildRules(idx) {
     if (!manageable() || gameState.debt) return false;
     const p = actor();
     if (p.bankrupt || tileKind(idx) !== "street" || gameState.owners[idx] !== idxOf(p)) return false;
@@ -580,7 +628,14 @@ function canBuildNow(idx) {
     const level = housesOn(idx);
     if (level >= HOTEL_LEVEL) return false;
     if (level > Math.min(...members.map(housesOn))) return false; // равномерная застройка
-    return p.money >= HOUSE_COST[group];
+    return true;
+}
+
+// Есть ли в банке то, что строим: отель (когда на улице 4 дома) или дом.
+const buildSupplyLeft = idx => housesOn(idx) + 1 >= HOTEL_LEVEL ? hotelsLeft() > 0 : housesLeft() > 0;
+
+function canBuildNow(idx) {
+    return canBuildRules(idx) && buildSupplyLeft(idx) && actor().money >= HOUSE_COST[tiles[idx].group];
 }
 
 function buildHouse(idx) {
@@ -600,7 +655,8 @@ function canSellHouse(idx) {
     if (!manageable()) return false;
     const p = actor();
     if (tileKind(idx) !== "street" || gameState.owners[idx] !== idxOf(p) || housesOn(idx) === 0) return false;
-    return housesOn(idx) >= Math.max(...groupMembers(tiles[idx].group).map(housesOn));
+    if (housesOn(idx) < Math.max(...groupMembers(tiles[idx].group).map(housesOn))) return false;
+    return housesOn(idx) < HOTEL_LEVEL || housesLeft() >= MAX_HOUSES; // отель превращается в 4 дома, им нужно место в банке
 }
 
 function sellHouse(idx) {
@@ -1105,12 +1161,15 @@ function continueSaved() {
 function initDisclaimer() {
     let seen = null;
     try { seen = localStorage.getItem("monopolyDisclaimerSeen"); } catch (e) {}
-    if (seen === "1") {
+    if (seen === "1" || window.innerWidth >= 900) {
         $("disclaimer-modal").style.display = "none";
         openSetup();
     }
 }
 
+document.addEventListener("click", e => {
+    if (!e.target.closest("#card-preview") && !e.target.closest(".pstrip")) $("card-preview").classList.add("hidden");
+});
 $("card-preview").addEventListener("mouseenter", () => clearTimeout(previewTimer));
 $("card-preview").addEventListener("mouseleave", schedulePreviewHide);
 buildDice();
