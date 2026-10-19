@@ -80,6 +80,7 @@ const COMMUNITY_CARDS = [
 let lastDiceSum = 7;
 let logLines = [];
 let setupCount = 2;
+const setupBots = [false, false, false, false]; // кто из игроков бот
 let infoTile = -1;     // клетка, на которой стоит фишка (экранчик с информацией)
 let hoverTile = -1;    // клетка под мышкой
 let pinnedTile = -1;   // клетка, на которую нажали (для телефона)
@@ -218,9 +219,10 @@ function renderButtons(list) {
 // Показывает вопрос и кнопки, возвращает value нажатой кнопки. Пока ждём ответ, можно строить дома, закладывать, меняться.
 // options - список или функция, возвращающая список (пересчитывается при каждом обновлении панелей).
 // auto - функция: как только вернёт true, вопрос закрывается сам со значением "auto".
-function ask(text, options, auto) {
+function ask(text, options, auto, ctx) {
     return new Promise(resolve => {
-        const pending = { options: options, auto: auto, resolve: null };
+        const bot = !!(ctx && ctx.player && ctx.player.bot);
+        const pending = { options: options, auto: auto, resolve: null, bot: bot };
         pending.resolve = value => {
             gameState.pending = null;
             gameState.idle = false;
@@ -232,10 +234,11 @@ function ask(text, options, auto) {
         };
         gameState.pending = pending;
         gameState.idle = true;
-        setPrompt(text);
+        setPrompt(bot ? ctx.player.name + " думает…" : text);
         renderAsk();
         renderProps();
         updateManageRow();
+        if (bot) botAsk(ctx, pending);
     });
 }
 
@@ -243,11 +246,12 @@ function renderAsk() {
     const pd = gameState && gameState.pending;
     if (!pd) return;
     if (pd.auto && pd.auto()) { pd.resolve("auto"); return; }
+    if (pd.bot) { renderButtons([]); return; } // за бота кнопки не нужны
     const list = typeof pd.options === "function" ? pd.options() : pd.options;
     renderButtons(list.map(o => ({ label: o.label, primary: o.primary, disabled: o.disabled, onClick: () => pd.resolve(o.value) })));
 }
 
-function showCard(deckKey, text) {
+function showCard(deckKey, text, autoMs) {
     return new Promise(resolve => {
         const chance = deckKey === "chance";
         $("card-box").className = "modal-box card-box " + (chance ? "chance" : "community");
@@ -255,7 +259,9 @@ function showCard(deckKey, text) {
         $("card-title").textContent = chance ? "Шанс" : "Казна";
         $("card-text").textContent = text;
         $("card-modal").classList.remove("hidden");
-        $("card-ok").onclick = () => { $("card-modal").classList.add("hidden"); resolve(); };
+        const close = () => { $("card-modal").classList.add("hidden"); resolve(); };
+        $("card-ok").onclick = close;
+        if (autoMs) setTimeout(() => { if (!$("card-modal").classList.contains("hidden")) close(); }, autoMs);
     });
 }
 
@@ -277,13 +283,13 @@ function setDie(el, value) {
     for (let i = 0; i < 9; i++) pips[i].classList.toggle("on", PIPS[value].indexOf(i) !== -1);
 }
 
-async function animateDice(a, b) {
+async function animateDice(a, b, fast) {
     const d1 = $("die1"), d2 = $("die2");
     $("roll-sum").textContent = "…";
     $("roll-note").textContent = "";
     d1.classList.add("rolling");
     d2.classList.add("rolling");
-    const end = performance.now() + 850;
+    const end = performance.now() + (fast ? 450 : 850);
     while (performance.now() < end) {
         setDie(d1, rollDie());
         setDie(d2, rollDie());
@@ -341,8 +347,8 @@ function refreshInfo() {
     const box = $("tile-info");
     if (idx < 0) {
         box.classList.add("hidden");
-        $("link-line").setAttribute("x2", $("link-line").getAttribute("x1"));
-        $("link-dot").setAttribute("r", 0);
+        $("link-line").style.display = "none";
+        $("link-dot").style.display = "none";
         return;
     }
     const changed = box.dataset.shown !== String(idx) || box.classList.contains("hidden");
@@ -376,6 +382,8 @@ function positionInfo(idx) {
     line.setAttribute("x2", c.x); line.setAttribute("y2", c.y);
     $("link-dot").setAttribute("cx", c.x); $("link-dot").setAttribute("cy", c.y);
     $("link-dot").setAttribute("r", 5);
+    line.style.display = "";
+    $("link-dot").style.display = "";
 }
 
 function onBoardRotate() {
@@ -439,7 +447,7 @@ function renderAll() {
     if (!gameState) return;
     const p = cur();
 
-    $("turn-name").textContent = p.name;
+    $("turn-name").textContent = p.name + (p.bot ? " 🤖" : "");
     $("turn-dot").style.background = p.color;
     $("turn-dot").style.color = p.color;
 
@@ -456,7 +464,24 @@ function renderAll() {
         row.id = "other-" + i;
         row.innerHTML = '<span class="dot" style="background:' + o.color + ";color:" + o.color + '"></span>' +
             '<span class="pname"></span><span class="pmoney">' + (o.bankrupt ? "банкрот" : money(o.money)) + "</span>";
-        row.querySelector(".pname").textContent = o.name + (o.inJail ? " 🚔" : "");
+        row.querySelector(".pname").textContent = (o.bot ? "🤖 " : "") + o.name + (o.inJail ? " 🚔" : "");
+        if (o.bot && !o.bankrupt && !p.bot) {
+            // кружок доверия бота к тебе и кнопка чата
+            const t = getTrust(o, p);
+            const ring = document.createElement("span");
+            ring.className = "ring";
+            ring.title = "Доверие " + o.name + " к тебе: " + t + "%";
+            ring.style.setProperty("--p", t);
+            ring.style.setProperty("--c", trustColor(t));
+            const talk = document.createElement("button");
+            talk.className = "talk-btn";
+            talk.textContent = "💬";
+            talk.title = "Поговорить с " + o.name;
+            talk.disabled = !manageable() || gameState.debt;
+            talk.onclick = () => openBotMenu(i);
+            row.insertBefore(talk, row.querySelector(".pmoney"));
+            row.insertBefore(ring, talk);
+        }
         $("others-list").appendChild(row);
     });
 
@@ -610,7 +635,7 @@ function addMoney(player, delta) {
 }
 
 // ---------- дома, отели, залог ----------
-const manageable = () => !!gameState && gameState.idle && !gameState.over;
+const manageable = () => !!gameState && !gameState.over && (botActing || (gameState.idle && !actor().bot));
 const ownsGroup = (p, group) => groupMembers(group).every(i => gameState.owners[i] === idxOf(p));
 const groupHasMortgage = group => groupMembers(group).some(isMortgaged);
 
@@ -716,6 +741,7 @@ function liquidationValue(p) {
 // Если не хватает денег, но имущества хватит, игрок продаёт дома и закладывает, пока не наберёт сумму. Иначе банкротство.
 async function raiseFunds(player, amount) {
     if (liquidationValue(player) < amount) return false;
+    if (player.bot) return await botRaiseFunds(player, amount);
     const pi = idxOf(player);
     gameState.actor = player;
     gameState.debt = true;
@@ -772,7 +798,7 @@ async function declareBankrupt(player, creditor) {
     player.bankrupt = true;
     renderAll();
     await showCard("community", player.name + " обанкротился и выбывает из игры." +
-        (creditor !== undefined ? " Всё имущество переходит к игроку " + gameState.players[creditor].name + "." : " Всё имущество возвращается банку."));
+        (creditor !== undefined ? " Всё имущество переходит к игроку " + gameState.players[creditor].name + "." : " Всё имущество возвращается банку."), player.bot ? 3000 : 0);
     if (alivePlayers().length === 1) {
         gameState.over = true;
         clearSave();
@@ -789,12 +815,12 @@ async function movePlayer(p, steps, dir) {
     requestDraw();
     for (let s = 0; s < steps; s++) {
         const next = (p.pos + dir + 40) % 40;
-        await hopToken(p, next);
+        await hopToken(p, next, p.bot ? 150 : 230);
         if (dir === TRAVEL && next === 0) {
             say(p.name + " проходит СТАРТ: +" + money(GO_SALARY));
             addMoney(p, GO_SALARY);
         }
-        await sleep(40);
+        await sleep(p.bot ? 10 : 40);
     }
     highlightTile = -1;
     requestDraw();
@@ -857,7 +883,8 @@ async function landOn(p, idx, opts) {
         const buy = await ask(
             "«" + tile.name + "» свободна. Цена " + money(tile.price) + ".",
             () => [{ label: "Купить за " + money(tile.price), value: true, primary: true, disabled: p.money < tile.price },
-                   { label: "Отказаться (аукцион)", value: false }]
+                   { label: "Отказаться (аукцион)", value: false }],
+            null, { kind: "buy", player: p, idx: idx }
         );
         if (buy) {
             addMoney(p, -tile.price);
@@ -873,8 +900,19 @@ async function landOn(p, idx, opts) {
     } else if (isMortgaged(idx)) {
         say("«" + tile.name + "» в залоге, рента не берётся");
     } else {
-        const rent = calcRent(idx, opts);
-        say(p.name + " платит " + money(rent) + " игроку " + gameState.players[owner].name + " за «" + tile.name + "»");
+        let rent = calcRent(idx, opts);
+        const ownerP = gameState.players[owner];
+        // человек платит боту: можно попросить скидку и поторговаться
+        if (ownerP.bot && !p.bot && rent > 0) {
+            const choice = await ask(
+                "«" + tile.name + "» принадлежит " + ownerP.name + ". Рента " + money(rent) + ".",
+                () => [{ label: "Заплатить " + money(rent), value: "pay", primary: true },
+                       { label: "💬 Попросить скидку", value: "ask" }],
+                null, { kind: "rent", player: p }
+            );
+            if (choice === "ask") rent = await negotiateRent(ownerP, p, rent, tile);
+        }
+        say(p.name + " платит " + money(rent) + " игроку " + ownerP.name + " за «" + tile.name + "»");
         await pay(p, rent, owner);
     }
 }
@@ -886,7 +924,7 @@ async function drawCard(p, deckKey) {
     if (card.a === "jailFree") p.jailCards.push({ deck: deckKey, card: card });
     else deck.queue.push(card);
     renderAll();
-    await showCard(deckKey, card.t);
+    await showCard(deckKey, card.t, p.bot ? 2600 : 0);
     await applyCard(p, card);
 }
 
@@ -949,6 +987,7 @@ async function startTurn() {
     if (gameState.over) return;
     const p = cur();
     gameState.doubles = 0;
+    gameState.turnCounter = (gameState.turnCounter || 0) + 1;
     propsView = null;
     setInfoTile(-1);
     $("roll-note").textContent = "";
@@ -963,7 +1002,7 @@ async function startTurn() {
             list.push({ label: "Бросить кубики (нужен дубль)", value: "roll", primary: true });
             return list;
         };
-        const choice = await ask(p.name + " на Штрафстоянке (попытка " + (p.jailTurns + 1) + " из 3)", opts);
+        const choice = await ask(p.name + " на Штрафстоянке (попытка " + (p.jailTurns + 1) + " из 3)", opts, null, { kind: "jail", player: p });
         if (choice === "roll") { await playRoll(); return; }
         if (choice === "card") useJailCard(p);
         if (choice === "pay") {
@@ -974,7 +1013,7 @@ async function startTurn() {
             renderAll();
         }
     }
-    await ask(p.name + ": твой ход", [{ label: "Бросить кубики", value: true, primary: true }]);
+    await ask(p.name + ": твой ход", [{ label: "Бросить кубики", value: true, primary: true }], null, { kind: "roll", player: p });
     await playRoll();
 }
 
@@ -982,7 +1021,7 @@ async function playRoll() {
     const p = cur();
     setInfoTile(-1);
     const a = rollDie(), b = rollDie();
-    await animateDice(a, b);
+    await animateDice(a, b, p.bot);
     const sum = a + b;
     lastDiceSum = sum;
     let doubles = a === b;
@@ -1029,11 +1068,11 @@ async function afterAction(doubles) {
     const p = cur();
     if (p.bankrupt) { endTurn(); return; }
     if (doubles && !p.inJail) {
-        await ask("Дубль! " + p.name + " бросает ещё раз", [{ label: "Бросить кубики", value: true, primary: true }]);
+        await ask("Дубль! " + p.name + " бросает ещё раз", [{ label: "Бросить кубики", value: true, primary: true }], null, { kind: "doubles", player: p });
         await playRoll();
         return;
     }
-    await ask(p.name + ": ход закончен (можно построить дома)", [{ label: "Завершить ход", value: true, primary: true }]);
+    await ask(p.name + ": ход закончен (можно построить дома)", [{ label: "Завершить ход", value: true, primary: true }], null, { kind: "end", player: p });
     endTurn();
 }
 
@@ -1046,12 +1085,17 @@ function endTurn() {
 }
 
 // ---------- старт и перезапуск ----------
-function newGame(names) {
+function newGame(names, bots) {
+    bots = bots || [];
+    const personas = shuffle(Object.keys(PERSONAS));
+    let botNo = 0;
     gameState = {
         players: names.map((name, i) => attachMoney({
             name: name, color: PLAYER_COLORS[i], notes: Object.assign(emptyNotes(), START_NOTES), pos: 0,
-            inJail: false, jailTurns: 0, jailCards: [], bankrupt: false, hop: null
+            inJail: false, jailTurns: 0, jailCards: [], bankrupt: false, hop: null,
+            bot: !!bots[i], persona: bots[i] ? personas[botNo++ % personas.length] : null, trust: {}
         })),
+        turnCounter: 0,
         owners: {},
         houses: {},
         mortgaged: {},
@@ -1098,17 +1142,28 @@ function renderSetup() {
     for (let i = 0; i < setupCount; i++) {
         const r = document.createElement("div");
         r.className = "name-row";
-        r.innerHTML = '<span class="dot" style="background:' + PLAYER_COLORS[i] + ";color:" + PLAYER_COLORS[i] + '"></span><input maxlength="14" placeholder="Игрок ' + (i + 1) + '">';
+        r.innerHTML = '<span class="dot" style="background:' + PLAYER_COLORS[i] + ";color:" + PLAYER_COLORS[i] + '"></span><input maxlength="14" placeholder="' + (setupBots[i] ? "Бот" : "Игрок " + (i + 1)) + '">';
         r.querySelector("input").value = names[i] || "";
+        const t = document.createElement("button");
+        t.className = "type-btn" + (setupBots[i] ? " bot" : "");
+        t.textContent = setupBots[i] ? "🤖 Бот" : "👤 Человек";
+        t.title = "Нажми, чтобы сменить: человек или бот";
+        t.onclick = () => { setupBots[i] = !setupBots[i]; renderSetup(); };
+        r.appendChild(t);
         $("setup-names").appendChild(r);
     }
 }
 
 function startFromSetup() {
-    const names = [];
-    document.querySelectorAll("#setup-names input").forEach((inp, i) => names.push(inp.value.trim() || "Игрок " + (i + 1)));
+    const names = [], bots = [];
+    const freeNames = shuffle(BOT_NAMES);
+    document.querySelectorAll("#setup-names input").forEach((inp, i) => {
+        bots.push(!!setupBots[i]);
+        names.push(inp.value.trim() || (setupBots[i] ? "Бот " + freeNames[i % freeNames.length] : "Игрок " + (i + 1)));
+    });
+    if (bots.every(b => b)) { alert("Нужен хотя бы один человек."); return; }
     $("setup-modal").classList.add("hidden");
-    newGame(names);
+    newGame(names, bots);
 }
 
 function restartGame() {

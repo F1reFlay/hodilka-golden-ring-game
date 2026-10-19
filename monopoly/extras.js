@@ -122,13 +122,14 @@ function tradableTiles(playerIdx) {
     }).sort((a, b) => pileOrder(a) - pileOrder(b));
 }
 
-function openTrade() {
+function openTrade(preselected) {
     if (!manageable() || gameState.debt) return;
     const me = gameState.current;
     const others = gameState.players.map((p, i) => i).filter(i => i !== me && !gameState.players[i].bankrupt);
     trade = { me: me, partner: null, step: "partner" };
     $("trade-modal").classList.remove("hidden");
-    if (others.length === 1) { trade.partner = others[0]; trade.step = "offer"; }
+    if (typeof preselected === "number" && others.indexOf(preselected) !== -1) { trade.partner = preselected; trade.step = "offer"; }
+    else if (others.length === 1) { trade.partner = others[0]; trade.step = "offer"; }
     renderTrade();
 }
 
@@ -176,7 +177,11 @@ function renderTrade() {
         ok.className = "btn primary";
         ok.id = "trade-offer-btn";
         ok.textContent = "Предложить";
-        ok.onclick = () => { trade.step = "review"; renderTrade(); };
+        ok.onclick = () => {
+            if (other.bot) { startBotDeal(); return; }
+            trade.step = "review";
+            renderTrade();
+        };
         const cancel = document.createElement("button");
         cancel.className = "btn";
         cancel.textContent = "Отмена";
@@ -292,45 +297,85 @@ function updateTradeButton() {
     $("trade-msg").textContent = empty ? "Выбери, что меняете." : "Другой игрок должен согласиться на следующем шаге.";
 }
 
+// Общая часть сделки. data: { me, partner (номера игроков), giveProps/getProps (с точки зрения me), giveJail/getJail,
+// giveNotes/getNotes (объекты с купюрами или null), cashFromMeToPartner (деньги, которые me отдаёт сверху) }.
+function applyTradeData(data) {
+    const me = gameState.players[data.me], other = gameState.players[data.partner];
+    const gn = data.giveNotes, tn = data.getNotes;
+    const ownsAll = (idx, list) => list.every(t => gameState.owners[t] === idx);
+    const haveNotes = (p, n) => !n || NOTE_VALUES.every(v => p.notes[v] >= n[v]);
+    if (!ownsAll(data.me, data.giveProps) || !ownsAll(data.partner, data.getProps) || !haveNotes(me, gn) || !haveNotes(other, tn)
+        || me.jailCards.length < data.giveJail || other.jailCards.length < data.getJail
+        || (data.cashFromMeToPartner || 0) > me.money) {
+        say("Сделка сорвалась: у кого-то уже нет нужного");
+        return false;
+    }
+    if (gn) { subNotes(me.notes, gn); addNotes(other.notes, gn); }
+    if (tn) { subNotes(other.notes, tn); addNotes(me.notes, tn); }
+    if (data.cashFromMeToPartner > 0) settle(me, other, data.cashFromMeToPartner);
+    data.giveProps.forEach(t => { gameState.owners[t] = data.partner; });
+    data.getProps.forEach(t => { gameState.owners[t] = data.me; });
+    for (let k = 0; k < data.giveJail; k++) other.jailCards.push(me.jailCards.shift());
+    for (let k = 0; k < data.getJail; k++) me.jailCards.push(other.jailCards.shift());
+    const cashA = (gn ? notesTotal(gn) : 0) + (data.cashFromMeToPartner || 0), cashB = tn ? notesTotal(tn) : 0;
+    const parts = [];
+    if (cashA) parts.push(me.name + " отдаёт " + money(cashA));
+    if (cashB) parts.push(other.name + " отдаёт " + money(cashB));
+    const names = list => list.map(t => "«" + tiles[t].name + "»").join(", ");
+    if (data.giveProps.length) parts.push(me.name + " отдаёт " + names(data.giveProps));
+    if (data.getProps.length) parts.push(other.name + " отдаёт " + names(data.getProps));
+    if (data.giveJail || data.getJail) parts.push("меняются картами освобождения");
+    say("🤝 Сделка " + me.name + " и " + other.name + ": " + parts.join("; "));
+    renderAll();
+    return true;
+}
+
 function executeTrade() {
     const o = trade.offer;
-    const me = gameState.players[trade.me], other = gameState.players[trade.partner];
-    // проверяем ещё раз, что всё на месте
-    const ownsAll = (idx, list) => list.every(t => gameState.owners[t] === idx);
-    const haveNotes = (p, picker) => NOTE_VALUES.every(v => p.notes[v] >= picker.values[v]);
-    if (!ownsAll(trade.me, o.giveProps) || !ownsAll(trade.partner, o.getProps) || !haveNotes(me, trade.giveNotes) || !haveNotes(other, trade.getNotes)
-        || me.jailCards.length < o.giveJail || other.jailCards.length < o.getJail) {
-        say("Сделка сорвалась: у кого-то уже нет нужного");
+    applyTradeData({
+        me: trade.me, partner: trade.partner, giveProps: o.giveProps, getProps: o.getProps, giveJail: o.giveJail, getJail: o.getJail,
+        giveNotes: trade.giveNotes.values, getNotes: trade.getNotes.values
+    });
+    closeTrade();
+}
+
+// Человек предложил сделку боту: идёт разговор, итог решает бот.
+async function startBotDeal() {
+    const o = trade.offer;
+    const human = gameState.players[trade.me], bot = gameState.players[trade.partner];
+    if (bot.dealRefusedTurn === gameState.turnCounter) {
+        say(bot.name + " не хочет больше торговаться на этом ходу");
         closeTrade();
         return;
     }
-    subNotes(me.notes, trade.giveNotes.values);
-    subNotes(other.notes, trade.getNotes.values);
-    addNotes(other.notes, trade.giveNotes.values);
-    addNotes(me.notes, trade.getNotes.values);
-    o.giveProps.forEach(t => { gameState.owners[t] = trade.partner; });
-    o.getProps.forEach(t => { gameState.owners[t] = trade.me; });
-    for (let k = 0; k < o.giveJail; k++) other.jailCards.push(me.jailCards.shift());
-    for (let k = 0; k < o.getJail; k++) me.jailCards.push(other.jailCards.shift());
-    const parts = [];
-    if (trade.giveNotes.total()) parts.push(me.name + " отдаёт " + money(trade.giveNotes.total()));
-    if (trade.getNotes.total()) parts.push(other.name + " отдаёт " + money(trade.getNotes.total()));
-    const names = list => list.map(t => "«" + tiles[t].name + "»").join(", ");
-    if (o.giveProps.length) parts.push(me.name + " отдаёт " + names(o.giveProps));
-    if (o.getProps.length) parts.push(other.name + " отдаёт " + names(o.getProps));
-    if (o.giveJail || o.getJail) parts.push("меняются картами освобождения");
-    say("🤝 Сделка " + me.name + " и " + other.name + ": " + parts.join("; "));
-    closeTrade();
+    const d = {
+        giveCash: trade.giveNotes.total(), giveProps: o.giveProps.slice(), giveJail: o.giveJail,
+        getCash: trade.getNotes.total(), getProps: o.getProps.slice(), getJail: o.getJail
+    };
+    const giveNotes = Object.assign({}, trade.giveNotes.values), getNotes = Object.assign({}, trade.getNotes.values);
+    $("trade-modal").classList.add("hidden");
+    const res = await negotiateDeal(bot, human, d);
+    if (res.accepted) {
+        const ok = applyTradeData({
+            me: trade.me, partner: trade.partner, giveProps: d.giveProps, getProps: d.getProps, giveJail: d.giveJail, getJail: d.getJail,
+            giveNotes: giveNotes, getNotes: getNotes, cashFromMeToPartner: res.extra
+        });
+        if (ok) say(bot.name + " согласился на сделку");
+    } else {
+        bot.dealRefusedTurn = gameState.turnCounter;
+        say(bot.name + " отказался от сделки");
+    }
+    trade = null;
     renderAll();
 }
 
 // ---------- аукцион ----------
 // Имущество, от которого отказался игрок, продаётся тому, кто даст больше. Ставки по кругу: +10, +50, +100, +500 или пас.
-async function auction(idx, decliner) {
+async function auction(idx, decliner, sellerIdx) {
     const tile = tiles[idx];
-    const all = gameState.players.filter(p => !p.bankrupt);
+    const all = gameState.players.filter(p => !p.bankrupt && (sellerIdx === undefined || idxOf(p) !== sellerIdx));
     const start = all.indexOf(decliner);
-    let active = all.slice(start + 1).concat(all.slice(0, start + 1));
+    let active = start === -1 ? all.slice() : all.slice(start + 1).concat(all.slice(0, start + 1));
     let high = 0, leader = null, t = 0;
 
     $("auction-card").innerHTML = tileInfoHTML(idx);
@@ -342,7 +387,7 @@ async function auction(idx, decliner) {
         if (p === leader) { t++; continue; }
         $("auction-info").innerHTML = "Ставка: <b>" + (leader ? money(high) + "</b> (" + esc(leader.name) + ")" : "пока нет</b>") +
             "<br>Ставит: <b>" + esc(p.name) + "</b> (" + money(p.money) + ")";
-        const choice = await new Promise(resolve => {
+        const choice = p.bot ? await (async () => { await botWait(600 + Math.random() * 500); $("auction-buttons").innerHTML = ""; return botBid(p, idx, high); })() : await new Promise(resolve => {
             const box = $("auction-buttons");
             box.innerHTML = "";
             [10, 50, 100, 500].forEach(inc => {
@@ -375,7 +420,7 @@ async function auction(idx, decliner) {
         return;
     }
     say("Аукцион выигрывает " + leader.name + ": «" + tile.name + "» за " + money(high));
-    if (await pay(leader, high)) {
+    if (await pay(leader, high, sellerIdx)) {
         gameState.owners[idx] = idxOf(leader);
         renderAll();
     }
