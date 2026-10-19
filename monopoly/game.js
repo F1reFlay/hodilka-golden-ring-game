@@ -468,6 +468,18 @@ function drawBoard() {
         ctx.translate(tcx, tcy);
         ctx.rotate(isCorner ? -currentAngle : getSideRotation(r.side));
         drawTileContent(tile, lw, lh, gameState ? (gameState.houses[i] || 0) : 0);
+        if (gameState && gameState.mortgaged && gameState.mortgaged[i]) {
+            // заложенная клетка: затемнена, с замком
+            roundRect(-lw / 2, -lh / 2, lw, lh, 10);
+            ctx.fillStyle = "rgba(13,14,16,0.68)";
+            ctx.fill();
+            ctx.fillStyle = "#ffffff";
+            ctx.font = "22px sans-serif";
+            ctx.fillText("🔒", 0, -2);
+            ctx.font = "700 8px sans-serif";
+            ctx.fillStyle = "#c9b8ff";
+            ctx.fillText("В ЗАЛОГЕ", 0, 16);
+        }
         ctx.restore();
 
         ctx.restore();

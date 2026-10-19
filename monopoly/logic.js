@@ -115,6 +115,73 @@ function groupMembers(group) {
 }
 
 const housesOn = i => (gameState && gameState.houses[i]) || 0;
+const isMortgaged = i => !!(gameState && gameState.mortgaged[i]);
+const mortgageValue = i => tiles[i].price / 2;
+const unmortgageCost = i => Math.round(tiles[i].price * 0.55); // залог + 10%
+// Кто сейчас распоряжается имуществом: ходящий игрок или должник, пока он собирает деньги.
+const actor = () => gameState.actor || cur();
+
+// ---------- купюры ----------
+// У каждого игрока настоящий набор купюр (player.notes); сумма денег (player.money) считается из него.
+const START_NOTES = { 500: 2, 100: 3, 50: 3, 10: 4, 5: 2, 1: 0 };
+const emptyNotes = () => ({ 500: 0, 100: 0, 50: 0, 10: 0, 5: 0, 1: 0 });
+const notesTotal = n => NOTE_VALUES.reduce((s, v) => s + v * (n[v] || 0), 0);
+
+function notesFromAmount(amount) {
+    const r = emptyNotes();
+    let rest = amount;
+    NOTE_VALUES.forEach(v => { r[v] = Math.floor(rest / v); rest -= r[v] * v; });
+    return r;
+}
+function addNotes(target, add) { NOTE_VALUES.forEach(v => { target[v] += add[v] || 0; }); }
+function subNotes(target, sub) { NOTE_VALUES.forEach(v => { target[v] -= sub[v] || 0; }); }
+
+// Игрок.money - сумма его купюр; в сохранение не попадает (enumerable: false).
+function attachMoney(p) {
+    Object.defineProperty(p, "money", { get() { return notesTotal(p.notes); }, enumerable: false, configurable: true });
+    return p;
+}
+
+// Набор купюр из have ровно на target или null.
+function findSubset(have, target) {
+    function rec(i, rest) {
+        if (rest === 0) return emptyNotes();
+        if (i >= NOTE_VALUES.length) return null;
+        const v = NOTE_VALUES[i];
+        for (let k = Math.min(have[v], Math.floor(rest / v)); k >= 0; k--) {
+            const sub = rec(i + 1, rest - k * v);
+            if (sub) { sub[v] = k; return sub; }
+        }
+        return null;
+    }
+    return rec(0, target);
+}
+
+// Какие купюры отдать за amount: ровно, а если нельзя, то с минимальной переплатой (сдачу даст банк).
+function pickNotesToPay(player, amount) {
+    const total = player.money;
+    for (let t = amount; t <= total; t++) {
+        const sub = findSubset(player.notes, t);
+        if (sub) return { given: sub, change: t - amount };
+    }
+    return null;
+}
+
+// Перевод amount от from к to (to === null: банку). Сдачу всегда даёт банк. Деньги проверяются заранее.
+function settle(from, to, amount) {
+    const r = pickNotesToPay(from, amount);
+    subNotes(from.notes, r.given);
+    if (to) addNotes(to.notes, r.given); // банк свои купюры не копит
+    if (r.change > 0) {
+        if (to) {
+            // получатель вернул бы сдачу сам: она уходит банку, а плательщик берёт такую же сумму из банка
+            const back = pickNotesToPay(to, r.change);
+            subNotes(to.notes, back.given);
+            if (back.change > 0) addNotes(to.notes, notesFromAmount(back.change));
+        }
+        addNotes(from.notes, notesFromAmount(r.change));
+    }
+}
 
 // ---------- события (строка-консоль) ----------
 function say(text) {
@@ -145,23 +212,36 @@ function renderButtons(list) {
     });
 }
 
-// Показывает вопрос и кнопки, возвращает value нажатой кнопки. Пока ждём ответ, можно строить дома.
-function ask(text, options) {
+// Показывает вопрос и кнопки, возвращает value нажатой кнопки. Пока ждём ответ, можно строить дома, закладывать, меняться.
+// options - список или функция, возвращающая список (пересчитывается при каждом обновлении панелей).
+// auto - функция: как только вернёт true, вопрос закрывается сам со значением "auto".
+function ask(text, options, auto) {
     return new Promise(resolve => {
-        setPrompt(text);
+        const pending = { options: options, auto: auto, resolve: null };
+        pending.resolve = value => {
+            gameState.pending = null;
+            gameState.idle = false;
+            renderButtons([]);
+            setPrompt("");
+            renderProps();
+            updateManageRow();
+            resolve(value);
+        };
+        gameState.pending = pending;
         gameState.idle = true;
+        setPrompt(text);
+        renderAsk();
         renderProps();
-        renderButtons(options.map(o => ({
-            label: o.label, primary: o.primary, disabled: o.disabled,
-            onClick: () => {
-                gameState.idle = false;
-                renderButtons([]);
-                setPrompt("");
-                renderProps();
-                resolve(o.value);
-            }
-        })));
+        updateManageRow();
     });
+}
+
+function renderAsk() {
+    const pd = gameState && gameState.pending;
+    if (!pd) return;
+    if (pd.auto && pd.auto()) { pd.resolve("auto"); return; }
+    const list = typeof pd.options === "function" ? pd.options() : pd.options;
+    renderButtons(list.map(o => ({ label: o.label, primary: o.primary, disabled: o.disabled, onClick: () => pd.resolve(o.value) })));
 }
 
 function showCard(deckKey, text) {
@@ -224,7 +304,7 @@ function tileInfoHTML(idx) {
         : (t.price !== undefined ? "<span>Свободна</span>" : "<span></span>");
     const bg = groupColors[t.group] || (t.group === "corner" ? "#3C3489" : "#4b5263");
     const light = !groupColors[t.group];
-    const sub = t.price !== undefined ? money(t.price) : (t.tax !== undefined ? "налог " + money(t.tax) : "");
+    const sub = isMortgaged(idx) ? "🔒 в залоге" : (t.price !== undefined ? money(t.price) : (t.tax !== undefined ? "налог " + money(t.tax) : ""));
     const head = '<div class="tc-head' + (light ? " light" : "") + '" style="--g:' + bg + '"><span>' +
         (t.emoji ? t.emoji + " " : "") + esc(t.name) + '</span><span class="tc-sub">' + sub + "</span></div>";
     let body = "";
@@ -235,13 +315,13 @@ function tileInfoHTML(idx) {
         const rows = [["Рента", r[0]], ["Вся группа", r[0] * 2], ["🏠", r[1]], ["🏠🏠", r[2]], ["🏠🏠🏠", r[3]], ["🏠×4", r[4]], ["🏨", r[5]]];
         body = (built ? '<div class="tc-built">' + houseEmoji(built) + "</div>" : "") +
             '<div class="tc-rows">' + rows.map(x => "<span>" + x[0] + "</span><span>" + x[1] + " ₽</span>").join("") + "</div>" +
-            '<div class="tc-foot"><span>Дом: ' + HOUSE_COST[t.group] + " ₽ · отель: " + HOUSE_COST[t.group] + " ₽</span>" + ownerHtml + "</div>";
+            '<div class="tc-foot"><span>Дом/отель: ' + HOUSE_COST[t.group] + " ₽ · залог: " + mortgageValue(idx) + " ₽</span>" + ownerHtml + "</div>";
     } else if (kind === "depot") {
         body = '<div class="tc-rows"><span>1 депо</span><span>25 ₽</span><span>2 депо</span><span>50 ₽</span><span>3 депо</span><span>100 ₽</span><span>4 депо</span><span>200 ₽</span></div>' +
-            '<div class="tc-foot"><span>Рента растёт с числом депо</span>' + ownerHtml + "</div>";
+            '<div class="tc-foot"><span>Залог: ' + mortgageValue(idx) + " ₽</span>" + ownerHtml + "</div>";
     } else if (kind === "utility") {
         body = '<div class="tc-text">Рента: 4 × число на кубиках. Если у владельца обе клетки (Электростанция и Водоканал): 10 ×.</div>' +
-            '<div class="tc-foot"><span></span>' + ownerHtml + "</div>";
+            '<div class="tc-foot"><span>Залог: ' + mortgageValue(idx) + " ₽</span>" + ownerHtml + "</div>";
     } else if (t.tax !== undefined) {
         body = '<div class="tc-text">Заплати банку ' + money(t.tax) + ".</div>";
     } else if (t.name === "Шанс" || t.name === "Казна") {
@@ -317,13 +397,6 @@ function initHover() {
 }
 
 // ---------- интерфейс: панели ----------
-function breakIntoNotes(amount) {
-    const counts = {};
-    let rest = Math.max(0, amount);
-    NOTE_VALUES.forEach(v => { counts[v] = Math.floor(rest / v); rest -= counts[v] * v; });
-    return counts;
-}
-
 function renderAll() {
     if (!gameState) return;
     const p = cur();
@@ -349,7 +422,7 @@ function renderAll() {
         $("others-list").appendChild(row);
     });
 
-    const counts = breakIntoNotes(p.money);
+    const counts = p.notes;
     $("notes").innerHTML = "";
     NOTE_VALUES.forEach(v => {
         const n = document.createElement("div");
@@ -363,6 +436,8 @@ function renderAll() {
     $("chance-count").textContent = gameState.decks.chance.queue.length + " карт";
     $("community-count").textContent = gameState.decks.community.queue.length + " карт";
     refreshInfo();
+    renderAsk();
+    updateManageRow();
     requestDraw();
 }
 
@@ -376,7 +451,7 @@ function pileOrder(i) {
 
 function renderProps() {
     if (!gameState) return;
-    const viewIdx = propsView === null ? gameState.current : propsView;
+    const viewIdx = propsView === null ? (gameState.actor ? idxOf(gameState.actor) : gameState.current) : propsView;
     const viewer = gameState.players[viewIdx];
 
     $("props-tabs").innerHTML = "";
@@ -400,8 +475,10 @@ function renderProps() {
         strip.style.setProperty("--pc", viewer.color);
         strip.style.setProperty("--g", groupColors[tiles[t].group] || "#8b8f98");
         strip.innerHTML = "<i></i><span class='pname'></span><span class='ph'></span>";
+        strip.dataset.tile = t;
+        strip.classList.toggle("mortgaged", isMortgaged(t));
         strip.querySelector(".pname").textContent = tiles[t].name;
-        strip.querySelector(".ph").textContent = houseEmoji(housesOn(t));
+        strip.querySelector(".ph").textContent = isMortgaged(t) ? "🔒" : houseEmoji(housesOn(t));
         if (canBuildNow(t)) {
             const level = housesOn(t) + 1;
             const btn = document.createElement("button");
@@ -423,6 +500,28 @@ function showPreview(idx, strip) {
     const pv = $("card-preview");
     pv.innerHTML = tileInfoHTML(idx);
     pv.classList.remove("hidden");
+    // кнопки действий (строить, продать, заложить, выкупить) для имущества того, кто сейчас распоряжается
+    const actions = [];
+    if (canBuildNow(idx)) actions.push([housesOn(idx) + 1 >= HOTEL_LEVEL ? "＋ Отель " + HOUSE_COST[tiles[idx].group] + " ₽" : "＋ Дом " + HOUSE_COST[tiles[idx].group] + " ₽", () => buildHouse(idx), true]);
+    if (canSellHouse(idx)) actions.push(["− Продать " + (housesOn(idx) >= HOTEL_LEVEL ? "отель" : "дом") + " +" + HOUSE_COST[tiles[idx].group] / 2 + " ₽", () => sellHouse(idx)]);
+    if (canMortgage(idx)) actions.push(["Заложить +" + mortgageValue(idx) + " ₽", () => mortgageTile(idx)]);
+    if (canUnmortgage(idx)) actions.push(["Выкупить −" + unmortgageCost(idx) + " ₽", () => unmortgageTile(idx), true]);
+    if (actions.length) {
+        const row = document.createElement("div");
+        row.className = "tc-actions";
+        actions.forEach(a => {
+            const b = document.createElement("button");
+            b.className = "btn btn-small" + (a[2] ? " primary" : "");
+            b.textContent = a[0];
+            b.onclick = () => {
+                a[1]();
+                const s = [...document.querySelectorAll(".pstrip")].find(x => Number(x.dataset.tile) === idx);
+                if (s) showPreview(idx, s); else pv.classList.add("hidden");
+            };
+            row.appendChild(b);
+        });
+        pv.firstChild.appendChild(row);
+    }
     const r = strip.getBoundingClientRect();
     const panel = $("props-col").getBoundingClientRect();
     const h = pv.offsetHeight;
@@ -457,21 +556,27 @@ function floatMoney(player, delta) {
     setTimeout(() => el.remove(), 1400);
 }
 
+// Игрок получает от банка delta (если delta > 0) или платит банку -delta (если delta < 0).
 function addMoney(player, delta) {
-    player.money += delta;
+    if (delta > 0) addNotes(player.notes, notesFromAmount(delta));
+    else if (delta < 0) settle(player, null, -delta);
     renderAll();
     floatMoney(player, delta);
 }
 
-// ---------- дома и отели ----------
-// Можно строить, если вся цветовая группа твоя, строишь равномерно, не больше 4 домов, отель только вместо 4 домов.
+// ---------- дома, отели, залог ----------
+const manageable = () => !!gameState && gameState.idle && !gameState.over;
+const ownsGroup = (p, group) => groupMembers(group).every(i => gameState.owners[i] === idxOf(p));
+const groupHasMortgage = group => groupMembers(group).some(isMortgaged);
+
+// Можно строить, если вся цветовая группа твоя и не в залоге, строишь равномерно, не больше 4 домов, отель только вместо 4 домов.
 function canBuildNow(idx) {
-    if (!gameState || !gameState.idle || gameState.over) return false;
-    const p = cur();
+    if (!manageable() || gameState.debt) return false;
+    const p = actor();
     if (p.bankrupt || tileKind(idx) !== "street" || gameState.owners[idx] !== idxOf(p)) return false;
     const group = tiles[idx].group;
+    if (!ownsGroup(p, group) || groupHasMortgage(group)) return false;
     const members = groupMembers(group);
-    if (!members.every(i => gameState.owners[i] === idxOf(p))) return false;
     const level = housesOn(idx);
     if (level >= HOTEL_LEVEL) return false;
     if (level > Math.min(...members.map(housesOn))) return false; // равномерная застройка
@@ -480,7 +585,7 @@ function canBuildNow(idx) {
 
 function buildHouse(idx) {
     if (!canBuildNow(idx)) return;
-    const p = cur();
+    const p = actor();
     const cost = HOUSE_COST[tiles[idx].group];
     const level = housesOn(idx) + 1;
     gameState.houses[idx] = level;
@@ -490,17 +595,104 @@ function buildHouse(idx) {
     renderAll();
 }
 
+// Продавать дома можно равномерно: сначала там, где их больше всего. Банк платит половину цены. Отель продаётся как дом.
+function canSellHouse(idx) {
+    if (!manageable()) return false;
+    const p = actor();
+    if (tileKind(idx) !== "street" || gameState.owners[idx] !== idxOf(p) || housesOn(idx) === 0) return false;
+    return housesOn(idx) >= Math.max(...groupMembers(tiles[idx].group).map(housesOn));
+}
+
+function sellHouse(idx) {
+    if (!canSellHouse(idx)) return;
+    const p = actor();
+    const refund = HOUSE_COST[tiles[idx].group] / 2;
+    const was = housesOn(idx);
+    gameState.houses[idx] = was - 1;
+    if (gameState.houses[idx] === 0) delete gameState.houses[idx];
+    say(p.name + " продаёт " + (was >= HOTEL_LEVEL ? "отель" : "дом") + " на «" + tiles[idx].name + "» за " + money(refund));
+    addMoney(p, refund);
+}
+
+// Заложить можно улицу без домов во всей группе (дома сначала продаются), депо или электростанцию.
+function canMortgage(idx) {
+    if (!manageable()) return false;
+    const p = actor();
+    if (tiles[idx].price === undefined || gameState.owners[idx] !== idxOf(p) || isMortgaged(idx)) return false;
+    if (tileKind(idx) === "street" && groupMembers(tiles[idx].group).some(i => housesOn(i) > 0)) return false;
+    return true;
+}
+
+function mortgageTile(idx) {
+    if (!canMortgage(idx)) return;
+    const p = actor();
+    gameState.mortgaged[idx] = true;
+    say(p.name + " закладывает «" + tiles[idx].name + "» за " + money(mortgageValue(idx)));
+    addMoney(p, mortgageValue(idx));
+}
+
+function canUnmortgage(idx) {
+    if (!manageable() || gameState.debt) return false;
+    const p = actor();
+    return gameState.owners[idx] === idxOf(p) && isMortgaged(idx) && p.money >= unmortgageCost(idx);
+}
+
+function unmortgageTile(idx) {
+    if (!canUnmortgage(idx)) return;
+    const p = actor();
+    delete gameState.mortgaged[idx];
+    say(p.name + " выкупает «" + tiles[idx].name + "» за " + money(unmortgageCost(idx)));
+    addMoney(p, -unmortgageCost(idx));
+}
+
+// Сколько денег игрок может собрать, продав всё: деньги, половина цены домов, залог всего незаложенного.
+function liquidationValue(p) {
+    const pi = idxOf(p);
+    let sum = p.money;
+    Object.keys(gameState.owners).map(Number).filter(t => gameState.owners[t] === pi).forEach(t => {
+        if (tileKind(t) === "street") sum += housesOn(t) * HOUSE_COST[tiles[t].group] / 2;
+        if (!isMortgaged(t)) sum += mortgageValue(t);
+    });
+    return sum;
+}
+
 // ---------- деньги и банкротство ----------
+// Если не хватает денег, но имущества хватит, игрок продаёт дома и закладывает, пока не наберёт сумму. Иначе банкротство.
+async function raiseFunds(player, amount) {
+    if (liquidationValue(player) < amount) return false;
+    const pi = idxOf(player);
+    gameState.actor = player;
+    gameState.debt = true;
+    propsView = pi;
+    say(player.name + ": не хватает " + money(amount - player.money) + ", нужно продать дома или заложить имущество");
+    renderAll();
+    const choice = await ask(
+        player.name + ": нужно заплатить " + money(amount) + ", не хватает " + money(Math.max(0, amount - player.money)) + ". Продай дома или заложи имущество в стопке справа.",
+        [{ label: "Сдаться (банкротство)", value: "bankrupt" }],
+        () => player.money >= amount
+    );
+    gameState.actor = null;
+    gameState.debt = false;
+    propsView = null;
+    return choice !== "bankrupt";
+}
+
 // Платит amount банку (creditor === undefined) или игроку-кредитору. Возвращает false, если игрок обанкротился.
 async function pay(player, amount, creditor) {
     if (amount <= 0) return true;
-    if (player.money >= amount) {
-        addMoney(player, -amount);
-        if (creditor !== undefined) addMoney(gameState.players[creditor], amount);
-        return true;
+    if (player.money < amount) {
+        const ok = await raiseFunds(player, amount);
+        if (!ok) {
+            await declareBankrupt(player, creditor);
+            return false;
+        }
     }
-    await declareBankrupt(player, creditor);
-    return false;
+    const to = creditor === undefined ? null : gameState.players[creditor];
+    settle(player, to, amount);
+    renderAll();
+    floatMoney(player, -amount);
+    if (to) floatMoney(to, amount);
+    return true;
 }
 
 async function declareBankrupt(player, creditor) {
@@ -508,15 +700,15 @@ async function declareBankrupt(player, creditor) {
     const rest = player.money;
     say("💥 " + player.name + " банкрот");
     if (creditor !== undefined && rest > 0) {
-        gameState.players[creditor].money += rest;
+        addNotes(gameState.players[creditor].notes, player.notes);
         floatMoney(gameState.players[creditor], rest);
     }
-    player.money = 0;
+    player.notes = emptyNotes();
     Object.keys(gameState.owners).forEach(t => {
         if (gameState.owners[t] === i) {
             delete gameState.houses[t]; // постройки сносятся
             if (creditor !== undefined) gameState.owners[t] = creditor;
-            else delete gameState.owners[t];
+            else { delete gameState.owners[t]; delete gameState.mortgaged[t]; }
         }
     });
     player.jailCards.forEach(c => gameState.decks[c.deck].queue.push(c.card));
@@ -527,6 +719,7 @@ async function declareBankrupt(player, creditor) {
         (creditor !== undefined ? " Всё имущество переходит к игроку " + gameState.players[creditor].name + "." : " Всё имущество возвращается банку."));
     if (alivePlayers().length === 1) {
         gameState.over = true;
+        clearSave();
         $("winner-text").textContent = "Побеждает " + alivePlayers()[0].name + " с капиталом " + money(alivePlayers()[0].money) + ".";
         $("winner-modal").classList.remove("hidden");
     }
@@ -605,11 +798,10 @@ async function landOn(p, idx, opts) {
     const owner = gameState.owners[idx];
     const pi = idxOf(p);
     if (owner === undefined) {
-        const canBuy = p.money >= tile.price;
         const buy = await ask(
-            "«" + tile.name + "» свободна. Цена " + money(tile.price) + (canBuy ? "." : ", но не хватает денег."),
-            [{ label: "Купить за " + money(tile.price), value: true, primary: true, disabled: !canBuy },
-             { label: "Отказаться", value: false }]
+            "«" + tile.name + "» свободна. Цена " + money(tile.price) + ".",
+            () => [{ label: "Купить за " + money(tile.price), value: true, primary: true, disabled: p.money < tile.price },
+                   { label: "Отказаться (аукцион)", value: false }]
         );
         if (buy) {
             addMoney(p, -tile.price);
@@ -617,10 +809,13 @@ async function landOn(p, idx, opts) {
             say(p.name + " покупает «" + tile.name + "» за " + money(tile.price));
             renderAll();
         } else {
-            say(p.name + " отказался от «" + tile.name + "»");
+            say(p.name + " отказался от «" + tile.name + "»: аукцион");
+            await auction(idx, p);
         }
     } else if (owner === pi) {
         say(p.name + " на своей клетке «" + tile.name + "»");
+    } else if (isMortgaged(idx)) {
+        say("«" + tile.name + "» в залоге, рента не берётся");
     } else {
         const rent = calcRent(idx, opts);
         say(p.name + " платит " + money(rent) + " игроку " + gameState.players[owner].name + " за «" + tile.name + "»");
@@ -702,12 +897,16 @@ async function startTurn() {
     setInfoTile(-1);
     $("roll-note").textContent = "";
     renderAll();
+    saveGame();
 
     if (p.inJail) {
-        const opts = [];
-        if (p.jailCards.length) opts.push({ label: "Карта освобождения", value: "card" });
-        opts.push({ label: "Заплатить " + money(JAIL_FINE), value: "pay", disabled: p.money < JAIL_FINE });
-        opts.push({ label: "Бросить кубики (нужен дубль)", value: "roll", primary: true });
+        const opts = () => {
+            const list = [];
+            if (p.jailCards.length) list.push({ label: "Карта освобождения", value: "card" });
+            list.push({ label: "Заплатить " + money(JAIL_FINE), value: "pay", disabled: p.money < JAIL_FINE });
+            list.push({ label: "Бросить кубики (нужен дубль)", value: "roll", primary: true });
+            return list;
+        };
         const choice = await ask(p.name + " на Штрафстоянке (попытка " + (p.jailTurns + 1) + " из 3)", opts);
         if (choice === "roll") { await playRoll(); return; }
         if (choice === "card") useJailCard(p);
@@ -793,15 +992,19 @@ function endTurn() {
 // ---------- старт и перезапуск ----------
 function newGame(names) {
     gameState = {
-        players: names.map((name, i) => ({
-            name: name, color: PLAYER_COLORS[i], money: START_MONEY, pos: 0,
+        players: names.map((name, i) => attachMoney({
+            name: name, color: PLAYER_COLORS[i], notes: Object.assign(emptyNotes(), START_NOTES), pos: 0,
             inJail: false, jailTurns: 0, jailCards: [], bankrupt: false, hop: null
         })),
         owners: {},
         houses: {},
+        mortgaged: {},
         current: 0,
         doubles: 0,
         idle: false,
+        pending: null,
+        actor: null,
+        debt: false,
         over: false,
         decks: {
             chance: { queue: shuffle(CHANCE_CARDS) },
@@ -816,6 +1019,9 @@ function newGame(names) {
 }
 
 function openSetup() {
+    const saved = loadSave();
+    $("continue-btn").classList.toggle("hidden", !saved);
+    if (saved) $("continue-btn").textContent = "Продолжить сохранённую игру (ходит " + saved.state.players[saved.state.current].name + ")";
     renderSetup();
     $("setup-modal").classList.remove("hidden");
 }
@@ -850,7 +1056,50 @@ function startFromSetup() {
 }
 
 function restartGame() {
-    if (confirm("Начать новую игру? Текущая будет потеряна.")) location.reload();
+    if (confirm("Начать новую игру? Текущая будет потеряна.")) {
+        clearSave();
+        location.reload();
+    }
+}
+
+// ---------- сохранение (в этом браузере, в начале каждого хода) ----------
+const SAVE_KEY = "monopolySave";
+
+function saveGame() {
+    if (!gameState || gameState.over) return;
+    try {
+        localStorage.setItem(SAVE_KEY, JSON.stringify({ state: gameState, log: logLines },
+            (k, v) => (k === "pending" || k === "hop" || k === "actor") ? undefined : v));
+    } catch (e) {}
+}
+
+function clearSave() {
+    try { localStorage.removeItem(SAVE_KEY); } catch (e) {}
+}
+
+function loadSave() {
+    try {
+        const raw = localStorage.getItem(SAVE_KEY);
+        return raw ? JSON.parse(raw) : null;
+    } catch (e) { return null; }
+}
+
+function continueSaved() {
+    const s = loadSave();
+    if (!s) return;
+    gameState = s.state;
+    gameState.players.forEach(p => { attachMoney(p); p.hop = null; });
+    gameState.pending = null;
+    gameState.actor = null;
+    gameState.debt = false;
+    gameState.idle = false;
+    logLines = [];
+    $("log-full").innerHTML = "";
+    (s.log || []).slice().reverse().forEach(say);
+    $("setup-modal").classList.add("hidden");
+    buildDice();
+    say("Игра продолжается: ходит " + cur().name);
+    startTurn();
 }
 
 function initDisclaimer() {
